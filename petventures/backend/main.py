@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from routers import pet
+from routers import flaneur, pet
 
 BACKEND_ROOT = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BACKEND_ROOT, "static")
@@ -37,6 +37,7 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.include_router(pet.router)
+app.include_router(flaneur.router)
 
 
 @app.get("/api/health")

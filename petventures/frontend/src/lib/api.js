@@ -31,3 +31,17 @@ export async function generateVariants(petId) {
   const res = await fetch(`/api/pet/${petId}/generate-variants`, { method: 'POST' })
   return handle(res)
 }
+
+/**
+ * Generate the comic strip.
+ * payload: { pet_id, selected_variant_ids, waypoints: [{lat,lng,order,type,name}] }
+ * Returns { comic_id, panels, strip_url, pdf_url }.
+ */
+export async function generateComic(payload) {
+  const res = await fetch('/api/flaneur/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  return handle(res)
+}

@@ -33,6 +33,8 @@ class Waypoint(BaseModel):
     lat: float
     lng: float
     order: int
+    type: str = "place"
+    name: str | None = None
 
 
 class GenerateComicRequest(BaseModel):
@@ -45,9 +47,11 @@ class Panel(BaseModel):
     order: int
     image_url: str
     location_name: str
+    type: str = "place"
 
 
 class GenerateComicResponse(BaseModel):
     comic_id: str
     panels: list[Panel]
     strip_url: str | None = None
+    pdf_url: str | None = None

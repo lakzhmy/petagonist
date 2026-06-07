@@ -49,10 +49,22 @@ petventures/
 
 ## What works today
 
+The full Petventures flow runs end-to-end (all generation stubbed):
+
 - **Step 1 — Your Pet:** drag-drop a photo + description → backend saves it →
   8–12 character variants are generated (stubbed: the pet posterized into bold,
   palette-colored comic cards) → pick 1–5 favourites.
-- **Steps 2–3 — Route & Comic:** placeholders, built in the next slices.
+- **Step 2 — The Route:** a token-free vector map (OpenFreeMap) centered on
+  Barcelona. Click to drop numbered waypoints (auto-classified by place type —
+  park / water / street …), reorder by drag, or **search a place / paste
+  coordinates** to add a stop and fly there. Route line + fit-to-bounds.
+- **Step 3 — The Comic:** generates a multi-panel strip where **each panel is
+  themed by its stop's type** (a park panel has trees + birds, a waterside panel
+  has the sea, etc.) and the pet is composited in. Toggle horizontal strip vs
+  vertical zine; **download as PNG or PDF**.
+
+Everything image-generation-related is stubbed with on-brand Pillow placeholders;
+swap the `ComfyUIClient` / `streetview` bodies for the real pipeline later.
 
 ## Environment
 

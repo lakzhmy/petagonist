@@ -54,6 +54,7 @@ class ComfyUIClient:
                     "id": variant_id,
                     "image_url": f"/static/generated/{pet_id}/{filename}",
                     "pose_prompt": pose,
+                    "path": out_path,  # server-side only (dropped from API response)
                 }
             )
         return variants

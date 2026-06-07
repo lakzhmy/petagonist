@@ -40,7 +40,6 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
       attributionControl: { compact: true },
     })
     mapRef.current = map
-    if (import.meta.env.DEV) window.__petmap = map // debug handle
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
 
     map.on('load', () => {

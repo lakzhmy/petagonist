@@ -6,8 +6,9 @@ import PetGallery from '../components/shared/PetGallery'
 import LoadingOverlay from '../components/shared/LoadingOverlay'
 import MapWithWaypoints from '../components/flaneur/MapWithWaypoints'
 import WaypointList from '../components/flaneur/WaypointList'
+import ComicStrip from '../components/flaneur/ComicStrip'
 import { useMapWaypoints } from '../hooks/useMapWaypoints'
-import { uploadPet, generateVariants } from '../lib/api'
+import { uploadPet, generateVariants, generateComic } from '../lib/api'
 
 /**
  * FlaneurPage — the Petventures experience and the app's home (root route).
@@ -27,6 +28,7 @@ export default function FlaneurPage() {
   const [selectedIds, setSelectedIds] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [comic, setComic] = useState(null)
   const wp = useMapWaypoints(10)
 
   async function handleGenerate({ file, description }) {
@@ -64,6 +66,41 @@ export default function FlaneurPage() {
     setSelectedIds((cur) =>
       cur.includes(id) ? cur.filter((x) => x !== id) : cur.length < 5 ? [...cur, id] : cur
     )
+  }
+
+  async function handleGenerateComic() {
+    setStep(3)
+    setComic(null)
+    setLoading(true)
+    setError('')
+    try {
+      const res = await generateComic({
+        pet_id: pet.id,
+        selected_variant_ids: selectedIds,
+        waypoints: wp.waypoints.map((w, i) => ({
+          lat: w.lat,
+          lng: w.lng,
+          order: i,
+          type: w.type,
+          name: w.name,
+        })),
+      })
+      setComic(res)
+    } catch (e) {
+      setError(e.message || 'Could not generate the comic.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function handleRestart() {
+    setComic(null)
+    setVariants([])
+    setSelectedIds([])
+    setPet(null)
+    wp.clear()
+    setError('')
+    setStep(1)
   }
 
   const goToStep = (n) => n <= step && setStep(n)
@@ -148,25 +185,26 @@ export default function FlaneurPage() {
                   max={wp.max}
                   onRemove={wp.remove}
                   onMove={wp.move}
-                  onGenerate={() => setStep(3)}
+                  onGenerate={handleGenerateComic}
                 />
               </div>
             </div>
           )}
-          {step === 3 && <ComicPlaceholder />}
+          {step === 3 &&
+            (comic ? (
+              <ComicStrip comic={comic} onRestart={handleRestart} />
+            ) : (
+              !error && (
+                <div className="rounded-[var(--radius-card)] border-2 border-dashed border-white/30 bg-white/5 p-14 text-center">
+                  <span className="animate-bob inline-block text-6xl">📖</span>
+                  <p className="mt-4 font-display text-xl font-black text-white">
+                    Drawing your comic…
+                  </p>
+                </div>
+              )
+            ))}
         </div>
       </section>
     </PageWrapper>
-  )
-}
-
-function ComicPlaceholder() {
-  return (
-    <div className="rounded-[var(--radius-card)] border-2 border-dashed border-white/30 bg-white/5 p-14 text-center">
-      <span className="animate-bob inline-block text-6xl">📖</span>
-      <p className="mt-4 font-display text-xl font-black text-white">
-        The comic strip comes together here
-      </p>
-    </div>
   )
 }

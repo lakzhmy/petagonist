@@ -86,7 +86,10 @@ async def generate_variants(pet_id: str) -> GenerateVariantsResponse:
         pose_prompts=poses,
         pet_id=pet_id,
     )
+    # Keep full variant details (incl. disk path + pose) for the comic step.
+    pet["variants"] = {v["id"]: v for v in variants}
+
     return GenerateVariantsResponse(
         pet_id=pet_id,
-        variants=[Variant(**v) for v in variants],
+        variants=[Variant(id=v["id"], image_url=v["image_url"], pose_prompt=v["pose_prompt"]) for v in variants],
     )
