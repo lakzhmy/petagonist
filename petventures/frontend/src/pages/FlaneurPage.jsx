@@ -1,21 +1,73 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import PageWrapper from '../components/layout/PageWrapper'
 import Tag from '../components/ui/Tag'
+import PetUploader from '../components/shared/PetUploader'
+import PetGallery from '../components/shared/PetGallery'
+import LoadingOverlay from '../components/shared/LoadingOverlay'
+import { uploadPet, generateVariants } from '../lib/api'
 
 /**
  * FlaneurPage — the Petventures experience and the app's home (root route).
- * The 3-step spine (Your Pet → The Route → The Comic).
- * Slice 1 lays out the stepper shell; steps get wired in Slices 2–4.
+ * The 3-step spine: Your Pet → The Route → The Comic.
+ * Slice 2 wires Step 1 (upload + character gallery). Steps 2–3 are placeholders.
  */
 const STEPS = [
-  { n: 1, title: 'Your Pet', tone: 'tang', active: true },
-  { n: 2, title: 'The Route', tone: 'grape', active: false },
-  { n: 3, title: 'The Comic', tone: 'lime', active: false },
+  { n: 1, title: 'Your Pet', tone: 'tang' },
+  { n: 2, title: 'The Route', tone: 'grape' },
+  { n: 3, title: 'The Comic', tone: 'lime' },
 ]
 
 export default function FlaneurPage() {
+  const [step, setStep] = useState(1)
+  const [pet, setPet] = useState(null) // { id, imageUrl, description }
+  const [variants, setVariants] = useState([])
+  const [selectedIds, setSelectedIds] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleGenerate({ file, description }) {
+    setLoading(true)
+    setError('')
+    try {
+      const up = await uploadPet(file, description)
+      const res = await generateVariants(up.pet_id)
+      setPet({ id: up.pet_id, imageUrl: up.image_url, description: up.description })
+      setVariants(res.variants)
+      setSelectedIds([])
+    } catch (e) {
+      setError(e.message || 'Something went wrong generating characters.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleRegenerate() {
+    if (!pet) return
+    setLoading(true)
+    setError('')
+    try {
+      const res = await generateVariants(pet.id)
+      setVariants(res.variants)
+      setSelectedIds([])
+    } catch (e) {
+      setError(e.message || 'Could not regenerate characters.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function toggleVariant(id) {
+    setSelectedIds((cur) =>
+      cur.includes(id) ? cur.filter((x) => x !== id) : cur.length < 5 ? [...cur, id] : cur
+    )
+  }
+
+  const goToStep = (n) => n <= step && setStep(n)
+
   return (
     <PageWrapper surface="grape">
+      <LoadingOverlay show={loading} />
+
       <section className="mx-auto max-w-5xl px-5 py-12">
         <div className="text-center">
           <h1 className="mx-auto max-w-2xl font-display text-4xl font-black leading-tight text-white sm:text-5xl">
@@ -23,41 +75,90 @@ export default function FlaneurPage() {
           </h1>
         </div>
 
-        {/* Stepper — step columns are fixed-width and the connector lines are
-            equal flex-1 spacers between them, so the row stays symmetric. */}
+        {/* Stepper */}
         <ol className="mx-auto mt-10 flex max-w-xl items-start justify-between">
-          {STEPS.map((s, i) => (
-            <Fragment key={s.n}>
-              <li className="flex w-20 flex-col items-center gap-2">
-                <Tag
-                  tone={s.active ? s.tone : 'cream'}
-                  className={`h-11 w-11 justify-center !rounded-full text-lg ${s.active ? '' : 'opacity-60'}`}
-                >
-                  {s.n}
-                </Tag>
-                <span className={`font-display text-sm font-extrabold ${s.active ? 'text-white' : 'text-white/50'}`}>
-                  {s.title}
-                </span>
-              </li>
-              {i < STEPS.length - 1 && (
-                <span className="mt-5 h-1 flex-1 rounded-full bg-white/20" />
-              )}
-            </Fragment>
-          ))}
+          {STEPS.map((s, i) => {
+            const reached = s.n <= step
+            return (
+              <Fragment key={s.n}>
+                <li className="flex w-20 flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => goToStep(s.n)}
+                    disabled={!reached}
+                    className={`spring ${reached ? 'cursor-pointer hover:scale-110' : 'cursor-default'}`}
+                  >
+                    <Tag
+                      tone={reached ? s.tone : 'cream'}
+                      className={`h-11 w-11 justify-center !rounded-full text-lg ${reached ? '' : 'opacity-60'}`}
+                    >
+                      {s.n < step ? '✓' : s.n}
+                    </Tag>
+                  </button>
+                  <span className={`font-display text-sm font-extrabold ${reached ? 'text-white' : 'text-white/50'}`}>
+                    {s.title}
+                  </span>
+                </li>
+                {i < STEPS.length - 1 && (
+                  <span
+                    className={`mt-5 h-1 flex-1 rounded-full ${s.n < step ? 'bg-sun' : 'bg-white/20'}`}
+                  />
+                )}
+              </Fragment>
+            )
+          })}
         </ol>
 
-        {/* Placeholder body */}
-        <div className="mt-12 rounded-[var(--radius-card)] border-2 border-dashed border-white/30 bg-white/5 p-14 text-center">
-          <span className="animate-bob inline-block text-6xl">🐾</span>
-          <p className="mt-4 font-display text-xl font-black text-white">
-            Step 1 lands in the next slice
-          </p>
-          <p className="mt-2 text-white/70">
-            The pet uploader and character gallery get wired up next. The shell,
-            colors, and motion you see here are the foundation they&apos;ll sit in.
-          </p>
+        {error && (
+          <p className="mt-6 text-center font-display font-bold text-sun">{error}</p>
+        )}
+
+        {/* ---- Step body ---- */}
+        <div className="mt-10">
+          {step === 1 &&
+            (variants.length === 0 ? (
+              <PetUploader onSubmit={handleGenerate} loading={loading} />
+            ) : (
+              <PetGallery
+                variants={variants}
+                selectedIds={selectedIds}
+                onToggle={toggleVariant}
+                onRegenerate={handleRegenerate}
+                onContinue={() => setStep(2)}
+              />
+            ))}
+
+          {step === 2 && <RoutePlaceholder selectedCount={selectedIds.length} />}
+          {step === 3 && <ComicPlaceholder />}
         </div>
       </section>
     </PageWrapper>
+  )
+}
+
+function RoutePlaceholder({ selectedCount }) {
+  return (
+    <div className="rounded-[var(--radius-card)] border-2 border-dashed border-white/30 bg-white/5 p-14 text-center">
+      <span className="animate-bob inline-block text-6xl">🗺️</span>
+      <p className="mt-4 font-display text-xl font-black text-white">
+        The map &amp; waypoints land in the next slice
+      </p>
+      <p className="mt-2 text-white/70">
+        You picked <strong className="text-sun">{selectedCount}</strong>{' '}
+        character{selectedCount === 1 ? '' : 's'}. Next you&apos;ll drop pins on a
+        real city map to plot the stroll.
+      </p>
+    </div>
+  )
+}
+
+function ComicPlaceholder() {
+  return (
+    <div className="rounded-[var(--radius-card)] border-2 border-dashed border-white/30 bg-white/5 p-14 text-center">
+      <span className="animate-bob inline-block text-6xl">📖</span>
+      <p className="mt-4 font-display text-xl font-black text-white">
+        The comic strip comes together here
+      </p>
+    </div>
   )
 }

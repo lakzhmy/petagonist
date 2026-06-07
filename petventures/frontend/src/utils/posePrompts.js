@@ -1,0 +1,36 @@
+/**
+ * The bank of 30 pet pose/action prompts.
+ * Mirrors backend/data/pose_prompts.py — kept in sync by hand (stub data).
+ */
+export const POSE_PROMPTS = [
+  'sitting on a cobblestone sidewalk looking up at buildings',
+  'walking confidently down a narrow European street',
+  'peeking around the corner of a stone building',
+  'sitting on a cafe terrace chair',
+  'looking through a shop window display',
+  'crossing a pedestrian crosswalk',
+  'standing on a bridge railing looking at water',
+  'sleeping curled up on a park bench',
+  'chasing pigeons in a plaza',
+  'sitting next to a street musician',
+  'hiding behind a lamppost',
+  'perched on top of a mailbox',
+  'sniffing flowers at a street-side planter',
+  'standing at a tram stop looking impatient',
+  'climbing stairs in a narrow alleyway',
+  'sitting in front of a cathedral entrance',
+  'looking up at a tall apartment building',
+  'standing on a manhole cover in the street',
+  'sitting on a fire hydrant',
+  'watching people from a low wall',
+  'walking along a waterfront promenade',
+  'standing at a food market stall',
+  'sitting under a large tree in a courtyard',
+  'peeking out from behind a parked bicycle',
+  'standing in front of street art on a wall',
+  'looking out from a building balcony',
+  'standing at the edge of a rooftop',
+  'walking through an archway passage',
+  'sitting next to a fountain',
+  'standing at a bus stop reading a tiny map',
+]

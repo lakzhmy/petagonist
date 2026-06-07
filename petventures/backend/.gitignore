@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Local env
+.env
+
+# Generated + uploaded media (keep the folders, ignore contents)
+static/uploads/*
+static/generated/*
+!static/uploads/.gitkeep
+!static/generated/.gitkeep
