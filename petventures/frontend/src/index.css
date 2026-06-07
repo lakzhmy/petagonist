@@ -1,0 +1,145 @@
+@import 'tailwindcss';
+
+/* ============================================================
+   PETVENTURES DESIGN SYSTEM
+   Vibe: fun, bold, colorful, rounded, bright.
+   The references (a joyful pet-shelter site) calibrate the
+   dial; layouts are driven by the experience, not copied.
+   ============================================================ */
+
+@theme {
+  /* --- Color system ---------------------------------------- */
+  --color-grape: #4a2fbd; /* primary purple — backgrounds, headers */
+  --color-grape-deep: #2f1d80; /* darker purple for depth/shadows */
+  --color-tang: #ff5c35; /* hot orange — CTAs, energy */
+  --color-sun: #ffd700; /* sunny yellow — highlights, tags */
+  --color-bubble: #ff69b4; /* bubblegum pink — secondary accent */
+  --color-lime: #7ed957; /* lime green — success, parks/nature */
+  --color-cream: #f5f0eb; /* off-white — light surfaces */
+  --color-ink: #1a1a2e; /* near-black — text on light */
+  --color-sky: #5ec5ff; /* extra: friendly blue for variety */
+
+  /* --- Typography ------------------------------------------ */
+  --font-display: 'Nunito', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* --- Radius (generous, per brief) ------------------------ */
+  --radius-card: 1.25rem; /* 20px */
+  --radius-soft: 0.875rem; /* 14px */
+
+  /* --- Colored, tinted shadows (never plain gray) ---------- */
+  --shadow-grape: 0 14px 30px -10px rgba(74, 47, 189, 0.45);
+  --shadow-tang: 0 14px 30px -10px rgba(255, 92, 53, 0.45);
+  --shadow-lift: 0 22px 44px -16px rgba(47, 29, 128, 0.55);
+
+  /* --- Springy easing (the signature micro-motion) --------- */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* --- Global base ------------------------------------------- */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background-color: var(--color-grape);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* ============================================================
+   Reusable utility classes (the playful primitives)
+   ============================================================ */
+
+/* Springy hover/lift used across buttons & cards */
+@utility spring {
+  transition:
+    transform 0.22s var(--ease-spring),
+    box-shadow 0.22s var(--ease-spring),
+    filter 0.22s var(--ease-spring);
+}
+
+/* Tiny playful tilt for headings / cards */
+@utility tilt-left {
+  transform: rotate(-1.5deg);
+}
+@utility tilt-right {
+  transform: rotate(1.5deg);
+}
+
+/* Paw-print + dot background pattern for page surfaces */
+@utility paw-pattern {
+  background-image: radial-gradient(
+      rgba(255, 255, 255, 0.07) 2px,
+      transparent 2px
+    ),
+    radial-gradient(rgba(255, 255, 255, 0.05) 2px, transparent 2px);
+  background-size: 44px 44px;
+  background-position:
+    0 0,
+    22px 22px;
+}
+
+/* Comic-frame look: chunky border + paper feel */
+@utility comic-frame {
+  border: 3px solid var(--color-ink);
+  border-radius: var(--radius-soft);
+  box-shadow: 4px 4px 0 0 var(--color-ink);
+}
+
+/* Subtle paper-noise overlay for comic panels (plain class — @utility
+   can't define pseudo-elements). */
+.paper-noise {
+  position: relative;
+}
+.paper-noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Gentle idle bob for mascots / placeholder art */
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@utility animate-bob {
+  animation: bob 3s var(--ease-spring) infinite;
+}
+
+/* Sparkle twinkle */
+@keyframes twinkle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.25) rotate(15deg);
+    opacity: 1;
+  }
+}
+@utility animate-twinkle {
+  animation: twinkle 2.4s ease-in-out infinite;
+}
