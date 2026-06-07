@@ -4,6 +4,9 @@ import Tag from '../components/ui/Tag'
 import PetUploader from '../components/shared/PetUploader'
 import PetGallery from '../components/shared/PetGallery'
 import LoadingOverlay from '../components/shared/LoadingOverlay'
+import MapWithWaypoints from '../components/flaneur/MapWithWaypoints'
+import WaypointList from '../components/flaneur/WaypointList'
+import { useMapWaypoints } from '../hooks/useMapWaypoints'
 import { uploadPet, generateVariants } from '../lib/api'
 
 /**
@@ -24,6 +27,7 @@ export default function FlaneurPage() {
   const [selectedIds, setSelectedIds] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const wp = useMapWaypoints(10)
 
   async function handleGenerate({ file, description }) {
     setLoading(true)
@@ -128,27 +132,31 @@ export default function FlaneurPage() {
               />
             ))}
 
-          {step === 2 && <RoutePlaceholder selectedCount={selectedIds.length} />}
+          {step === 2 && (
+            <div className="grid gap-5 lg:grid-cols-3">
+              <div className="comic-frame h-[420px] overflow-hidden lg:col-span-2 lg:h-[560px]">
+                <MapWithWaypoints
+                  waypoints={wp.waypoints}
+                  onAdd={wp.add}
+                  onRemove={wp.remove}
+                  atMax={wp.atMax}
+                />
+              </div>
+              <div className="lg:h-[560px]">
+                <WaypointList
+                  waypoints={wp.waypoints}
+                  max={wp.max}
+                  onRemove={wp.remove}
+                  onMove={wp.move}
+                  onGenerate={() => setStep(3)}
+                />
+              </div>
+            </div>
+          )}
           {step === 3 && <ComicPlaceholder />}
         </div>
       </section>
     </PageWrapper>
-  )
-}
-
-function RoutePlaceholder({ selectedCount }) {
-  return (
-    <div className="rounded-[var(--radius-card)] border-2 border-dashed border-white/30 bg-white/5 p-14 text-center">
-      <span className="animate-bob inline-block text-6xl">🗺️</span>
-      <p className="mt-4 font-display text-xl font-black text-white">
-        The map &amp; waypoints land in the next slice
-      </p>
-      <p className="mt-2 text-white/70">
-        You picked <strong className="text-sun">{selectedCount}</strong>{' '}
-        character{selectedCount === 1 ? '' : 's'}. Next you&apos;ll drop pins on a
-        real city map to plot the stroll.
-      </p>
-    </div>
   )
 }
 

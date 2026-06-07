@@ -128,6 +128,59 @@ h4 {
   animation: bob 3s var(--ease-spring) infinite;
 }
 
+/* Map waypoint pin — purple circle, white number, bouncy drop on add. */
+.wp-pin {
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  background: var(--color-grape);
+  border: 3px solid #fff;
+  box-shadow: 0 6px 14px -4px rgba(26, 26, 46, 0.6);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.18s var(--ease-spring);
+}
+.wp-pin:hover {
+  transform: scale(1.15);
+}
+.wp-pin--start {
+  background: var(--color-lime);
+  color: var(--color-ink);
+}
+.wp-pin--end {
+  background: var(--color-tang);
+}
+@keyframes pin-drop {
+  0% {
+    transform: translateY(-22px) scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(3px) scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+.wp-pin--new {
+  animation: pin-drop 0.4s var(--ease-spring);
+}
+
+/* MapLibre popup restyle to match the app */
+.maplibregl-popup-content {
+  border-radius: var(--radius-soft);
+  border: 3px solid var(--color-ink);
+  box-shadow: 4px 4px 0 0 var(--color-ink);
+  font-family: var(--font-body);
+  padding: 12px 14px;
+}
+
 /* Sparkle twinkle */
 @keyframes twinkle {
   0%,
