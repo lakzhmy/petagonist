@@ -2,27 +2,48 @@ import { Link, NavLink } from 'react-router-dom'
 import PawIcon from '../ui/PawIcon'
 import Tag from '../ui/Tag'
 
+// Mode switcher — only used by the parked multi-mode landing (variant="modes").
+// The live Petventures demo uses the minimal navbar (logo only).
 const MODES = [
   { to: '/flaneur', label: 'Pet Flâneur', ready: true },
   { to: '/ispy', label: 'I-SPY', ready: false },
   { to: '/isobuild', label: 'IsoBuild', ready: false },
 ]
 
-export default function Navbar() {
+function Logo({ className = '' }) {
+  return (
+    <Link to="/" className={`spring flex items-center gap-2 hover:scale-[1.03] ${className}`}>
+      <span className="grid h-10 w-10 place-items-center rounded-full bg-sun text-ink shadow-[var(--shadow-grape)]">
+        <PawIcon size={22} color="var(--color-grape)" />
+      </span>
+      <span className="font-display text-2xl font-black tracking-tight text-white">
+        Pet<span className="text-sun">ventures</span>
+      </span>
+    </Link>
+  )
+}
+
+/**
+ * Navbar
+ *  - variant="minimal" (default): just the centered logo. Used by the
+ *    single-experience Petventures demo.
+ *  - variant="modes": logo + mode switcher. Kept for the parked landing page.
+ */
+export default function Navbar({ variant = 'minimal' }) {
+  if (variant === 'minimal') {
+    return (
+      <header className="sticky top-0 z-40 bg-grape/85 backdrop-blur-md">
+        <nav className="mx-auto flex max-w-7xl items-center justify-center px-5 py-3">
+          <Logo />
+        </nav>
+      </header>
+    )
+  }
+
   return (
     <header className="sticky top-0 z-40 bg-grape/85 backdrop-blur-md">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3">
-        {/* Logo */}
-        <Link to="/" className="spring flex items-center gap-2 hover:scale-[1.03]">
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-sun text-ink shadow-[var(--shadow-grape)]">
-            <PawIcon size={22} color="var(--color-grape)" />
-          </span>
-          <span className="font-display text-2xl font-black tracking-tight text-white">
-            Pet<span className="text-sun">ventures</span>
-          </span>
-        </Link>
-
-        {/* Mode switcher */}
+        <Logo />
         <div className="flex items-center gap-1 rounded-full bg-white/10 p-1">
           {MODES.map((m) => (
             <NavLink

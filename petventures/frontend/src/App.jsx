@@ -6,8 +6,17 @@ import ComingSoonPage from './pages/ComingSoonPage'
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
+      {/* Petventures (the Flâneur experience) is the demo — it owns the root. */}
+      <Route path="/" element={<FlaneurPage />} />
+      {/* Alias kept so the parked landing page's links still resolve. */}
       <Route path="/flaneur" element={<FlaneurPage />} />
+
+      {/* Parked for later: the multi-mode landing. Not linked anywhere in the
+          demo, but preserved + viewable for when I-SPY / IsoBuild return. */}
+      <Route path="/landing" element={<LandingPage />} />
+
+      {/* Hidden modes — reachable by direct URL only (no nav links). I-SPY may
+          become a hidden feature later; IsoBuild stays parked. */}
       <Route
         path="/ispy"
         element={

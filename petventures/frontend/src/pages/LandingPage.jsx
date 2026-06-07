@@ -38,7 +38,7 @@ const MODES = [
 
 export default function LandingPage() {
   return (
-    <PageWrapper surface="grape">
+    <PageWrapper surface="grape" nav="modes">
       {/* ---------- Hero ---------- */}
       <section className="relative mx-auto max-w-7xl px-5 pb-10 pt-16 text-center">
         <div className="mx-auto max-w-3xl">

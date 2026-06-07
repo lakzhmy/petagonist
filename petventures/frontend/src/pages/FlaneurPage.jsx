@@ -1,9 +1,10 @@
+import { Fragment } from 'react'
 import PageWrapper from '../components/layout/PageWrapper'
 import Tag from '../components/ui/Tag'
-import Sparkle from '../components/ui/Sparkle'
 
 /**
- * FlaneurPage — the 3-step spine (Your Pet → The Route → The Comic).
+ * FlaneurPage — the Petventures experience and the app's home (root route).
+ * The 3-step spine (Your Pet → The Route → The Comic).
  * Slice 1 lays out the stepper shell; steps get wired in Slices 2–4.
  */
 const STEPS = [
@@ -17,19 +18,17 @@ export default function FlaneurPage() {
     <PageWrapper surface="grape">
       <section className="mx-auto max-w-5xl px-5 py-12">
         <div className="text-center">
-          <Tag tone="sun" icon={<Sparkle size={14} twinkle />}>
-            Pet Flâneur
-          </Tag>
-          <h1 className="mt-4 font-display text-5xl font-black text-white">
-            Let&apos;s make a comic
+          <h1 className="mx-auto max-w-2xl font-display text-4xl font-black leading-tight text-white sm:text-5xl">
+            Let&apos;s make an awesome pet adventure for your baby!
           </h1>
         </div>
 
-        {/* Stepper */}
-        <ol className="mx-auto mt-10 flex max-w-2xl items-center justify-between gap-2">
+        {/* Stepper — step columns are fixed-width and the connector lines are
+            equal flex-1 spacers between them, so the row stays symmetric. */}
+        <ol className="mx-auto mt-10 flex max-w-xl items-start justify-between">
           {STEPS.map((s, i) => (
-            <li key={s.n} className="flex flex-1 items-center gap-2">
-              <div className="flex flex-col items-center gap-2">
+            <Fragment key={s.n}>
+              <li className="flex w-20 flex-col items-center gap-2">
                 <Tag
                   tone={s.active ? s.tone : 'cream'}
                   className={`h-11 w-11 justify-center !rounded-full text-lg ${s.active ? '' : 'opacity-60'}`}
@@ -39,11 +38,11 @@ export default function FlaneurPage() {
                 <span className={`font-display text-sm font-extrabold ${s.active ? 'text-white' : 'text-white/50'}`}>
                   {s.title}
                 </span>
-              </div>
+              </li>
               {i < STEPS.length - 1 && (
-                <span className="mb-6 h-1 flex-1 rounded-full bg-white/20" />
+                <span className="mt-5 h-1 flex-1 rounded-full bg-white/20" />
               )}
-            </li>
+            </Fragment>
           ))}
         </ol>
 
