@@ -1,52 +1,33 @@
 import { useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import SearchBox from './SearchBox'
+import { classifyFeatures } from '../../utils/waypointTypes'
 
 // Barcelona — the user is at IAAC.
 const BARCELONA = { center: [2.1734, 41.3851], zoom: 13 }
 
-// Token-free CARTO Voyager raster basemap (real streets, friendly colors).
-// Overridable with VITE_MAP_STYLE_URL (a full MapLibre style URL).
-const DEFAULT_STYLE = {
-  version: 8,
-  sources: {
-    carto: {
-      type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-        'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-        'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-      ],
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors © CARTO',
-    },
-  },
-  layers: [{ id: 'carto', type: 'raster', source: 'carto' }],
-}
+// Token-free OpenFreeMap vector basemap. Vector tiles let us classify what's
+// under a click (park / water / street …). Overridable via VITE_MAP_STYLE_URL.
+const DEFAULT_STYLE = 'https://tiles.openfreemap.org/styles/liberty'
 
 const routeGeoJSON = (waypoints) => ({
   type: 'Feature',
-  geometry: {
-    type: 'LineString',
-    coordinates: waypoints.map((w) => [w.lng, w.lat]),
-  },
+  geometry: { type: 'LineString', coordinates: waypoints.map((w) => [w.lng, w.lat]) },
 })
 
 /**
- * MapWithWaypoints — click the map to drop numbered pins; a route line links
- * them in order; clicking a pin opens a popup with coords + Remove.
- *
- * Imperative MapLibre lives behind refs; the component reconciles markers and
- * the route line whenever the `waypoints` prop changes.
+ * MapWithWaypoints — click the map to drop numbered pins (auto-classified by
+ * place type); search a place/coords to add + fly there; route line links them.
  */
 export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const readyRef = useRef(false)
   const markersRef = useRef(new Map()) // id -> { marker, el }
-  // Keep latest callbacks reachable from stable map handlers.
-  const cbRef = useRef({ onAdd, onRemove, atMax })
-  cbRef.current = { onAdd, onRemove, atMax }
+  // Latest values reachable from stable map handlers.
+  const stateRef = useRef({ onAdd, onRemove, atMax, waypoints })
+  stateRef.current = { onAdd, onRemove, atMax, waypoints }
 
   // -- Init map once --------------------------------------------------------
   useEffect(() => {
@@ -59,6 +40,7 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
       attributionControl: { compact: true },
     })
     mapRef.current = map
+    if (import.meta.env.DEV) window.__petmap = map // debug handle
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
 
     map.on('load', () => {
@@ -72,7 +54,7 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
           'line-color': '#FF5C35',
           'line-width': 5,
           'line-dasharray': [1.4, 1.2],
-          'line-opacity': 0.9,
+          'line-opacity': 0.95,
         },
       })
       readyRef.current = true
@@ -81,8 +63,15 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
     })
 
     map.on('click', (e) => {
-      if (cbRef.current.atMax) return
-      cbRef.current.onAdd(e.lngLat.lng, e.lngLat.lat)
+      if (stateRef.current.atMax) return
+      // Classify what's under the click from the vector tiles.
+      const pad = 6
+      const feats = map.queryRenderedFeatures([
+        [e.point.x - pad, e.point.y - pad],
+        [e.point.x + pad, e.point.y + pad],
+      ])
+      const type = classifyFeatures(feats)
+      stateRef.current.onAdd(e.lngLat.lng, e.lngLat.lat, { type })
     })
 
     return () => {
@@ -106,7 +95,6 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
     const store = markersRef.current
     const liveIds = new Set(waypoints.map((w) => w.id))
 
-    // Remove markers for deleted waypoints.
     for (const [id, entry] of store) {
       if (!liveIds.has(id)) {
         entry.marker.remove()
@@ -114,9 +102,7 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
       }
     }
 
-    // Add new + update numbers/colors on existing.
     waypoints.forEach((w, i) => {
-      const number = i + 1
       const role =
         waypoints.length > 1 && i === 0
           ? 'wp-pin--start'
@@ -128,8 +114,7 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
         const el = document.createElement('div')
         el.className = 'wp-pin wp-pin--new'
         el.addEventListener('animationend', () => el.classList.remove('wp-pin--new'))
-
-        const popupNode = buildPopup(w, () => cbRef.current.onRemove(w.id))
+        const popupNode = buildPopup(w, () => stateRef.current.onRemove(w.id))
         const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([w.lng, w.lat])
           .setPopup(new maplibregl.Popup({ offset: 24, closeButton: false }).setDOMContent(popupNode))
@@ -137,22 +122,59 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
         entry = { el, marker }
         store.set(w.id, entry)
       }
-      entry.el.textContent = String(number)
+      entry.el.textContent = String(i + 1)
       entry.el.className = `wp-pin ${role}`.trim()
     })
 
-    // Update the route line.
     const src = map.getSource('route')
     if (src) src.setData(routeGeoJSON(waypoints))
   }
 
-  return <div ref={containerRef} className="h-full w-full" />
+  // -- Camera helpers -------------------------------------------------------
+  function fitTo(points, { animate = true } = {}) {
+    const map = mapRef.current
+    if (!map || points.length === 0) return
+    if (points.length === 1) {
+      map.flyTo({ center: [points[0].lng, points[0].lat], zoom: 14, duration: animate ? 800 : 0 })
+      return
+    }
+    const b = points.reduce(
+      (bb, p) => bb.extend([p.lng, p.lat]),
+      new maplibregl.LngLatBounds([points[0].lng, points[0].lat], [points[0].lng, points[0].lat])
+    )
+    map.fitBounds(b, { padding: 70, maxZoom: 15, duration: animate ? 800 : 0 })
+  }
+
+  function handlePick({ lng, lat, type, name }) {
+    if (stateRef.current.atMax) return
+    onAdd(lng, lat, { type, name })
+    // Google-Maps feel: fit to all stops once there are 2+, else fly to the one.
+    fitTo([...stateRef.current.waypoints, { lng, lat }])
+  }
+
+  return (
+    <div className="relative h-full w-full">
+      <div ref={containerRef} className="h-full w-full" />
+      <SearchBox onPick={handlePick} />
+      {waypoints.length >= 2 && (
+        <button
+          type="button"
+          onClick={() => fitTo(stateRef.current.waypoints)}
+          className="spring absolute bottom-3 left-3 z-10 rounded-full border-2 border-ink bg-white px-4 py-2 font-display text-sm font-extrabold text-ink shadow-[3px_3px_0_0_var(--color-ink)] hover:-translate-y-0.5"
+        >
+          ⤢ Fit route
+        </button>
+      )}
+    </div>
+  )
 }
 
 function buildPopup(w, onRemove) {
   const node = document.createElement('div')
   node.innerHTML = `
-    <div style="font-weight:700;color:#1A1A2E;margin-bottom:6px">Waypoint</div>
+    <div style="font-weight:700;color:#1A1A2E;margin-bottom:6px">${
+      w.name ? escapeHtml(w.name) : 'Waypoint'
+    }</div>
     <div style="font-size:12px;color:#555;margin-bottom:8px">
       ${w.lat.toFixed(4)}, ${w.lng.toFixed(4)}
     </div>`
@@ -164,4 +186,8 @@ function buildPopup(w, onRemove) {
   btn.addEventListener('click', onRemove)
   node.appendChild(btn)
   return node
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 }

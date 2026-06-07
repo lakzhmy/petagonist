@@ -13,6 +13,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import Button from '../ui/Button'
 import Tag from '../ui/Tag'
+import { getType } from '../../utils/waypointTypes'
 
 /**
  * WaypointList — ordered list of dropped waypoints. Drag to reorder, delete
@@ -77,6 +78,7 @@ export default function WaypointList({ waypoints, max, onRemove, onMove, onGener
 }
 
 function SortableRow({ w, index, onRemove }) {
+  const type = getType(w.type)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: w.id })
   const style = {
@@ -108,8 +110,9 @@ function SortableRow({ w, index, onRemove }) {
       </Tag>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate font-display text-sm font-extrabold text-white">
-          Stop {index + 1}
+        <p className="flex items-center gap-1.5 truncate font-display text-sm font-extrabold text-white">
+          <span title={type.label}>{type.icon}</span>
+          <span className="truncate">{w.name || `${type.label} stop`}</span>
         </p>
         <p className="truncate text-xs text-white/60">
           {w.lat.toFixed(4)}, {w.lng.toFixed(4)}

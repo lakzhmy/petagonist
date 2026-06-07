@@ -14,8 +14,15 @@ export function useMapWaypoints(max = 10) {
   const [waypoints, setWaypoints] = useState([])
 
   const add = useCallback(
-    (lng, lat) =>
-      setWaypoints((w) => (w.length >= max ? w : [...w, { id: nextId(), lng, lat }])),
+    (lng, lat, meta = {}) =>
+      setWaypoints((w) =>
+        w.length >= max
+          ? w
+          : [
+              ...w,
+              { id: nextId(), lng, lat, type: meta.type || 'place', name: meta.name || null },
+            ]
+      ),
     [max]
   )
 
