@@ -36,7 +36,7 @@ from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
-from routers import flaneur, pet  # noqa: E402
+from routers import flaneur, mapillary, pet  # noqa: E402
 
 BACKEND_ROOT = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BACKEND_ROOT, "static")
@@ -62,6 +62,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.include_router(pet.router)
 app.include_router(flaneur.router)
+app.include_router(mapillary.router)
 
 
 @app.get("/api/health")

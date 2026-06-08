@@ -59,6 +59,8 @@ The full Petagonist flow runs end-to-end (all generation stubbed):
   Barcelona. Click to drop up to **8** numbered waypoints (auto-classified by
   place type — park / water / street …), reorder by drag, or **search a place /
   paste coordinates** to add a stop and fly there. Route line + fit-to-bounds.
+  Toggle **photo coverage** to see which streets have Mapillary imagery before
+  dropping pins (tiles proxied through the backend so the token stays server-side).
 - **Step 3 — The Comic:** generates panels where **each panel is themed by its
   stop's type** (a park panel has trees + birds, a waterside panel has the sea,
   etc.) and the pet is composited in. Panels land in a **3-column grid**; unused

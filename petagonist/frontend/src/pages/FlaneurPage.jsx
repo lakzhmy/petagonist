@@ -17,7 +17,7 @@ import { uploadPet, generateVariants, generateComic } from '../lib/api'
  */
 const STEPS = [
   { n: 1, title: 'Your Pet', tone: 'tang' },
-  { n: 2, title: 'The Route', tone: 'grape' },
+  { n: 2, title: 'The Route', tone: 'bubble' },
   { n: 3, title: 'The Comic', tone: 'lime' },
 ]
 

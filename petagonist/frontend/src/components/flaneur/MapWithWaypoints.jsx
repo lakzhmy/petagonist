@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import SearchBox from './SearchBox'
@@ -29,6 +29,21 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
   // Latest values reachable from stable map handlers.
   const stateRef = useRef({ onAdd, onRemove, atMax, waypoints })
   stateRef.current = { onAdd, onRemove, atMax, waypoints }
+  // Mapillary photo-coverage overlay (toggle shows where street photos exist).
+  const [coverageEnabled, setCoverageEnabled] = useState(false)
+  const [coverageOn, setCoverageOn] = useState(false)
+
+  // Is a Mapillary token configured? (drives whether the toggle appears)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/mapillary/status')
+      .then((r) => r.json())
+      .then((d) => alive && setCoverageEnabled(!!d.enabled))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
 
   // -- Init map once --------------------------------------------------------
   useEffect(() => {
@@ -57,6 +72,38 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
           'line-opacity': 0.95,
         },
       })
+
+      // Mapillary coverage overlay — proxied tiles, hidden until toggled on,
+      // inserted under the route line so the route stays on top.
+      map.addSource('mly', {
+        type: 'vector',
+        tiles: [`${window.location.origin}/api/mapillary/coverage/{z}/{x}/{y}`],
+        minzoom: 6,
+        maxzoom: 14,
+      })
+      map.addLayer(
+        {
+          id: 'mly-seq',
+          type: 'line',
+          source: 'mly',
+          'source-layer': 'sequence',
+          layout: { visibility: 'none', 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#22C55E', 'line-width': 2.5, 'line-opacity': 0.7 },
+        },
+        'route-line'
+      )
+      map.addLayer(
+        {
+          id: 'mly-img',
+          type: 'circle',
+          source: 'mly',
+          'source-layer': 'image',
+          layout: { visibility: 'none' },
+          paint: { 'circle-color': '#16A34A', 'circle-radius': 2.6, 'circle-opacity': 0.65 },
+        },
+        'route-line'
+      )
+
       readyRef.current = true
       map.resize()
       syncMarkers()
@@ -165,6 +212,16 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
     })
   }
 
+  function toggleCoverage() {
+    const map = mapRef.current
+    if (!map || !map.getLayer('mly-seq')) return
+    const next = !coverageOn
+    const vis = next ? 'visible' : 'none'
+    map.setLayoutProperty('mly-seq', 'visibility', vis)
+    if (map.getLayer('mly-img')) map.setLayoutProperty('mly-img', 'visibility', vis)
+    setCoverageOn(next)
+  }
+
   // -- Camera helpers -------------------------------------------------------
   function fitTo(points, { animate = true } = {}) {
     const map = mapRef.current
@@ -199,15 +256,36 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
       {/* Themed click bursts render into this empty, React-owned overlay. */}
       <div ref={burstLayerRef} className="pointer-events-none absolute inset-0 z-[5] overflow-hidden" />
       <SearchBox onPick={handlePick} />
-      {waypoints.length >= 2 && (
-        <button
-          type="button"
-          onClick={() => fitTo(stateRef.current.waypoints)}
-          className="spring absolute bottom-3 left-3 z-10 rounded-full border-2 border-grape-light bg-white px-4 py-2 font-display text-sm font-extrabold text-grape shadow-[var(--shadow-lift)] hover:-translate-y-0.5"
-        >
-          ⤢ Fit route
-        </button>
-      )}
+
+      {/* Bottom-left controls: photo-coverage toggle + fit-route */}
+      <div className="absolute bottom-3 left-3 z-10 flex flex-col items-start gap-2">
+        {coverageEnabled && (
+          <button
+            type="button"
+            onClick={toggleCoverage}
+            title="Show streets that have Mapillary photos"
+            className={`spring rounded-full border-2 px-4 py-2 font-display text-sm font-extrabold shadow-[var(--shadow-lift)] hover:-translate-y-0.5 ${
+              coverageOn ? 'border-lime bg-lime text-ink' : 'border-grape-light bg-white text-grape'
+            }`}
+          >
+            📷 {coverageOn ? 'Coverage on' : 'Photo coverage'}
+          </button>
+        )}
+        {coverageOn && (
+          <span className="rounded-full bg-ink/80 px-3 py-1 text-xs font-bold text-white">
+            green = streets with photos
+          </span>
+        )}
+        {waypoints.length >= 2 && (
+          <button
+            type="button"
+            onClick={() => fitTo(stateRef.current.waypoints)}
+            className="spring rounded-full border-2 border-grape-light bg-white px-4 py-2 font-display text-sm font-extrabold text-grape shadow-[var(--shadow-lift)] hover:-translate-y-0.5"
+          >
+            ⤢ Fit route
+          </button>
+        )}
+      </div>
     </div>
   )
 }
