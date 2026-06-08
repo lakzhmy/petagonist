@@ -51,20 +51,29 @@ petventures/
 
 The full Petventures flow runs end-to-end (all generation stubbed):
 
-- **Step 1 — Your Pet:** drag-drop a photo + description → backend saves it →
-  8–12 character variants are generated (stubbed: the pet posterized into bold,
-  palette-colored comic cards) → pick 1–5 favourites.
+- **Step 1 — Your Pet:** give a photo, a description, or both (either is enough)
+  → backend saves it → 8–12 character variants are generated (stubbed: the pet
+  posterized into bold, palette-colored comic cards; description-only falls back
+  to a paw glyph) → pick 1–5 favourites.
 - **Step 2 — The Route:** a token-free vector map (OpenFreeMap) centered on
-  Barcelona. Click to drop numbered waypoints (auto-classified by place type —
-  park / water / street …), reorder by drag, or **search a place / paste
-  coordinates** to add a stop and fly there. Route line + fit-to-bounds.
-- **Step 3 — The Comic:** generates a multi-panel strip where **each panel is
-  themed by its stop's type** (a park panel has trees + birds, a waterside panel
-  has the sea, etc.) and the pet is composited in. Toggle horizontal strip vs
-  vertical zine; **download as PNG or PDF**.
+  Barcelona. Click to drop up to **8** numbered waypoints (auto-classified by
+  place type — park / water / street …), reorder by drag, or **search a place /
+  paste coordinates** to add a stop and fly there. Route line + fit-to-bounds.
+- **Step 3 — The Comic:** generates panels where **each panel is themed by its
+  stop's type** (a park panel has trees + birds, a waterside panel has the sea,
+  etc.) and the pet is composited in. Panels land in a **3-column grid**; unused
+  slots (fewer than 8 stops) become editable colour cells you can caption. Pick
+  a layout **at download**: a printable 16:9 **Strip** (2×4 upright grid on
+  yellow bands) or **Zine** (8-page fold-up booklet imposition — top row prints
+  upside-down on purpose), as **PDF or PNG**.
+
+Navigation is non-linear — the stepper, a **← Back** link, and **← Different
+pet** let you move around without reloading.
 
 Everything image-generation-related is stubbed with on-brand Pillow placeholders;
-swap the `ComfyUIClient` / `streetview` bodies for the real pipeline later.
+swap the `ComfyUIClient` / `streetview` bodies for the real pipeline later. See
+the integration seams in `services/comfyui_client.py` (variant generation,
+scene tintinify, composite) and `services/streetview.py` (Google Street View).
 
 ## Environment
 
