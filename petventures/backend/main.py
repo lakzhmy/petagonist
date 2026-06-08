@@ -8,11 +8,35 @@ from __future__ import annotations
 
 import os
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
-from routers import flaneur, pet
+def _load_dotenv() -> None:
+    """Load the nearest .env (searching up from here to the repo root) into the
+    environment, without adding a dependency. Existing env vars win."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(5):
+        envp = os.path.join(here, ".env")
+        if os.path.isfile(envp):
+            with open(envp, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    k, v = line.split("=", 1)
+                    os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+            return
+        parent = os.path.dirname(here)
+        if parent == here:
+            break
+        here = parent
+
+
+_load_dotenv()
+
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+from routers import flaneur, pet  # noqa: E402
 
 BACKEND_ROOT = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BACKEND_ROOT, "static")

@@ -63,8 +63,9 @@ The full Petventures flow runs end-to-end (all generation stubbed):
   stop's type** (a park panel has trees + birds, a waterside panel has the sea,
   etc.) and the pet is composited in. Panels land in a **3-column grid**; unused
   slots (fewer than 8 stops) become editable colour cells you can caption. Each
-  panel has a **↻ re-roll** that swaps in a different scene + pose for that stop
-  (stub: a re-seeded scene; later: the next Mapillary photo for that coordinate).
+  panel has a **↻ re-roll** that swaps in a different scene + pose for that stop —
+  the next **Mapillary** photo of that spot when a token is set, else a re-seeded
+  drawn placeholder.
   Pick a layout **at download**: a printable 16:9 **Strip** (2×4 upright grid on
   yellow bands) or **Zine** (8-page fold-up booklet imposition — top row prints
   upside-down on purpose), as **PDF or PNG**.
@@ -72,19 +73,22 @@ The full Petventures flow runs end-to-end (all generation stubbed):
 Navigation is non-linear — the stepper, a **← Back** link, and **← Different
 pet** let you move around without reloading.
 
-Everything image-generation-related is stubbed with on-brand Pillow placeholders;
-swap the seam bodies for the real pipeline later — nothing else changes:
+Scene backgrounds are **live via Mapillary** when a token is set; the AI styling
+steps are still stubbed with on-brand Pillow placeholders. Each seam swaps out
+independently — nothing else changes:
 
 - `services/streetview.py` `fetch_street_view(lat, lng, type, …, seed)` — the
-  **scene source**. Today it draws a seeded themed scene (the `seed` is the
-  re-roll counter). Replace with a **Mapillary** query (rank candidates near the
-  point by distance/recency/heading; return candidate `#seed`) or Google Street
-  View. Set `MAPILLARY_TOKEN` in `.env`.
+  **scene source**. With a Mapillary token it ranks images near the point
+  (flat-over-pano → nearest → most recent) and returns candidate `#seed` (so ↻
+  cycles real coverage), lightly comic-treated. No token / no coverage / any
+  error → a seeded drawn placeholder. Set `MAPILLARY_TOKEN` (or `MapillaryToken`)
+  in a `.env` at the repo root or `backend/`.
 - `services/comfyui_client.py` — variant generation, scene **tintinify** (Tintin
-  LoRA + ControlNet), and pet composite.
+  LoRA + ControlNet), and pet composite — still stubbed.
 
 ## Environment
 
-Copy `.env.example` in each app if you want to override defaults
-(map style URL on the frontend; Street View / ComfyUI keys on the backend —
-both stubbed for now).
+Copy `.env.example` in each app to override defaults. Backend: `MAPILLARY_TOKEN`
+enables real street-level scenes (free token; falls back to drawn scenes
+without it); ComfyUI URL is stubbed. Frontend: optional map style URL.
+The `.env` is git-ignored — keep your token out of commits.

@@ -1,26 +1,88 @@
-"""Scene source — STUBBED with themed, seeded scene generation.
+"""Scene source for the comic pipeline.
 
-This is the seam where real imagery plugs in later. `fetch_street_view` is the
-one function the comic pipeline calls to get a scene image for a coordinate.
+`fetch_street_view` is the one function the pipeline calls to get a scene image
+for a coordinate. It now tries **Mapillary** first (real street-level photo near
+the point), and falls back to a drawn, themed placeholder when there's no token,
+no coverage, or any error — so the app always produces a panel.
 
-  today  → draw a bold "ligne claire"-ish scene whose look depends on the
-           waypoint's place type (park / water / street / plaza / building),
-           varied by `seed` so re-rolling a panel gives a visibly different shot.
-  later  → swap this body for a Mapillary query (rank candidates near the point,
-           return candidate #seed's photo) or Google Street View. Nothing else
-           in the app changes — the signature stays the same.
+`seed` is the re-roll counter: for Mapillary it selects candidate #seed from the
+ranked results (so ↻ cycles real photos); for the placeholder it varies the
+drawn scene. The photo gets a light comic treatment to bridge the look until the
+ComfyUI tintinify pass exists.
 """
 
 from __future__ import annotations
 
+import io
+import json
+import math
 import os
 import random
+import urllib.parse
+import urllib.request
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageEnhance, ImageOps
 
-from .placeholders import _load_font
+MAPILLARY_GRAPH = "https://graph.mapillary.com/images"
+# Progressively widen the search until we find coverage near the point.
+SEARCH_RADII_M = (60, 150, 350)
 
-# MAPILLARY_TOKEN = os.environ.get("MAPILLARY_TOKEN")  # used by the real impl
+
+def _mapillary_token() -> str | None:
+    return os.environ.get("MAPILLARY_TOKEN") or os.environ.get("MapillaryToken")
+
+
+def _bbox(lat: float, lng: float, meters: float = 60.0) -> str:
+    """A small bounding box (min_lon,min_lat,max_lon,max_lat) around the point."""
+    dlat = meters / 111_320.0
+    dlng = meters / (111_320.0 * max(0.01, math.cos(math.radians(lat))))
+    return f"{lng - dlng:.6f},{lat - dlat:.6f},{lng + dlng:.6f},{lat + dlat:.6f}"
+
+
+def _mapillary_scene(lat, lng, seed, location_name, out_path, size, token) -> str | None:
+    """Fetch a real Mapillary photo near (lat,lng); return out_path or None.
+
+    Ranks candidates (flat over pano, then nearest, then most recent) and picks
+    #seed so re-rolling cycles through the real coverage at that spot.
+    """
+    fields = "id,computed_geometry,geometry,compass_angle,captured_at,thumb_1024_url,is_pano"
+    # access_token kept literal (it contains | which must not be percent-encoded).
+    data = []
+    for meters in SEARCH_RADII_M:
+        qs = urllib.parse.urlencode({"fields": fields, "bbox": _bbox(lat, lng, meters), "limit": 40})
+        url = f"{MAPILLARY_GRAPH}?access_token={token}&{qs}"
+        req = urllib.request.Request(url, headers={"User-Agent": "petventures/0.1"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = (json.load(r) or {}).get("data", [])
+        if data:
+            break
+    if not data:
+        return None
+
+    def dist(c):
+        g = c.get("computed_geometry") or c.get("geometry") or {}
+        co = g.get("coordinates")
+        return ((co[1] - lat) ** 2 + (co[0] - lng) ** 2) if co else 9e9
+
+    ranked = sorted(data, key=lambda c: (1 if c.get("is_pano") else 0, dist(c), -(c.get("captured_at") or 0)))
+    chosen = ranked[seed % len(ranked)]
+    thumb = chosen.get("thumb_1024_url")
+    if not thumb:
+        return None
+
+    ireq = urllib.request.Request(thumb, headers={"User-Agent": "petventures/0.1"})
+    with urllib.request.urlopen(ireq, timeout=20) as r:
+        photo = Image.open(io.BytesIO(r.read())).convert("RGB")
+
+    photo = ImageOps.fit(photo, size, Image.LANCZOS)
+    # Light comic treatment so the photo blends until ComfyUI tintinify lands.
+    photo = ImageEnhance.Color(photo).enhance(1.25)
+    photo = ImageEnhance.Contrast(photo).enhance(1.08)
+    photo = ImageOps.posterize(photo, 5)
+
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    photo.save(out_path, "PNG")
+    return out_path
 
 # A small set of sky palettes; the seed picks one, so re-rolls read as different
 # times of day — the cheapest "this is a different photo" signal.
@@ -158,30 +220,26 @@ def fetch_street_view(
 ) -> str:
     """Return a path to a scene image for the given coordinates.
 
-    `seed` selects a variation (sky palette + element jitter) so re-rolling a
-    panel yields a different scene. The real implementation would instead pick
-    candidate #seed from a ranked Mapillary / Street View result set:
-
-        # bbox = around(lat, lng, ~40m)
-        # imgs = mapillary_images(bbox, token=MAPILLARY_TOKEN)
-        # ranked = rank_by(distance, recency, heading)
-        # chosen = ranked[seed % len(ranked)]
-        # img_bytes = requests.get(chosen["thumb_2048_url"]).content
+    Tries Mapillary first (real street-level photo near the point, candidate
+    #seed); on no token / no coverage / any error, draws a seeded themed
+    placeholder so a panel is always produced.
     """
+    # 1) Real street-level photo via Mapillary (if configured + covered).
+    token = _mapillary_token()
+    if token:
+        try:
+            path = _mapillary_scene(lat, lng, seed, location_name, out_path, size, token)
+            if path:
+                return path
+        except Exception:  # noqa: BLE001 — network/parse issues fall back to drawn scene
+            pass
+
+    # 2) Drawn placeholder, varied by seed.
     rng = random.Random(seed)
     sky = rng.choice(SKIES)
     w, h = size
     img = Image.new("RGB", (w, h), sky[0])
     SCENES.get(place_type, SCENES["place"])(img, w, h, rng, sky)
-
-    # Small location tag in the corner.
-    d = ImageDraw.Draw(img)
-    label = location_name or f"{lat:.4f}, {lng:.4f}"
-    font = _load_font(20)
-    tb = d.textbbox((0, 0), label, font=font)
-    tw = tb[2] - tb[0]
-    d.rounded_rectangle((14, 14, 14 + tw + 24, 50), radius=14, fill="#1A1A2E")
-    d.text((26, 22), label, font=font, fill="#FFFFFF")
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     img.save(out_path, "PNG")
