@@ -3,7 +3,7 @@ import Button from '../ui/Button'
 import Tag from '../ui/Tag'
 import Sparkle from '../ui/Sparkle'
 import PanelView from './PanelView'
-import { exportComic } from '../../lib/api'
+import { exportComic, regeneratePanel } from '../../lib/api'
 
 // Brand colours for blank cells — mirrors backend layout.BLANK_COLORS so the
 // on-screen preview matches the printed page.
@@ -19,15 +19,29 @@ const SLOTS = 8 // both templates always lay out 8 cells
  * chosen only at download, where it renders a printable 16:9 page.
  */
 export default function ComicStrip({ comic, onRestart }) {
-  const panels = comic?.panels ?? []
+  const [panels, setPanels] = useState(comic?.panels ?? [])
   const n = panels.length
   const [captions, setCaptions] = useState({}) // { slotIndex: text } for blanks
   const [format, setFormat] = useState('pdf')
   const [busy, setBusy] = useState('') // 'strip' | 'zine' while exporting
+  const [rolling, setRolling] = useState({}) // { order: true } while re-rolling
   const [error, setError] = useState('')
 
   function setCaption(i, text) {
     setCaptions((c) => ({ ...c, [i]: text }))
+  }
+
+  async function regenerate(order) {
+    setRolling((r) => ({ ...r, [order]: true }))
+    setError('')
+    try {
+      const updated = await regeneratePanel({ comic_id: comic.comic_id, order })
+      setPanels((ps) => ps.map((p) => (p.order === order ? updated : p)))
+    } catch (e) {
+      setError(e.message || 'Could not re-roll that panel.')
+    } finally {
+      setRolling((r) => ({ ...r, [order]: false }))
+    }
   }
 
   async function download(template) {
@@ -75,7 +89,13 @@ export default function ComicStrip({ comic, onRestart }) {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {Array.from({ length: SLOTS }).map((_, i) =>
           i < n ? (
-            <PanelView key={panels[i].order} panel={panels[i]} index={i} />
+            <PanelView
+              key={panels[i].order}
+              panel={panels[i]}
+              index={i}
+              onRegenerate={() => regenerate(panels[i].order)}
+              rolling={!!rolling[panels[i].order]}
+            />
           ) : (
             <BlankCell
               key={`blank-${i}`}

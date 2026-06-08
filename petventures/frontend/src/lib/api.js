@@ -50,6 +50,19 @@ export async function generateComic(payload) {
 }
 
 /**
+ * Re-roll a single panel (new scene + pose for that stop).
+ * Returns the updated panel { order, image_url, location_name, type }.
+ */
+export async function regeneratePanel({ comic_id, order }) {
+  const res = await fetch('/api/flaneur/regenerate-panel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ comic_id, order }),
+  })
+  return handle(res)
+}
+
+/**
  * Render a printable template for a generated comic.
  * args: { comic_id, template: 'strip'|'zine', format?: 'pdf'|'png', captions?: {idx: text} }
  * Returns { url }.

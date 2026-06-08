@@ -62,8 +62,10 @@ The full Petventures flow runs end-to-end (all generation stubbed):
 - **Step 3 — The Comic:** generates panels where **each panel is themed by its
   stop's type** (a park panel has trees + birds, a waterside panel has the sea,
   etc.) and the pet is composited in. Panels land in a **3-column grid**; unused
-  slots (fewer than 8 stops) become editable colour cells you can caption. Pick
-  a layout **at download**: a printable 16:9 **Strip** (2×4 upright grid on
+  slots (fewer than 8 stops) become editable colour cells you can caption. Each
+  panel has a **↻ re-roll** that swaps in a different scene + pose for that stop
+  (stub: a re-seeded scene; later: the next Mapillary photo for that coordinate).
+  Pick a layout **at download**: a printable 16:9 **Strip** (2×4 upright grid on
   yellow bands) or **Zine** (8-page fold-up booklet imposition — top row prints
   upside-down on purpose), as **PDF or PNG**.
 
@@ -71,9 +73,15 @@ Navigation is non-linear — the stepper, a **← Back** link, and **← Differe
 pet** let you move around without reloading.
 
 Everything image-generation-related is stubbed with on-brand Pillow placeholders;
-swap the `ComfyUIClient` / `streetview` bodies for the real pipeline later. See
-the integration seams in `services/comfyui_client.py` (variant generation,
-scene tintinify, composite) and `services/streetview.py` (Google Street View).
+swap the seam bodies for the real pipeline later — nothing else changes:
+
+- `services/streetview.py` `fetch_street_view(lat, lng, type, …, seed)` — the
+  **scene source**. Today it draws a seeded themed scene (the `seed` is the
+  re-roll counter). Replace with a **Mapillary** query (rank candidates near the
+  point by distance/recency/heading; return candidate `#seed`) or Google Street
+  View. Set `MAPILLARY_TOKEN` in `.env`.
+- `services/comfyui_client.py` — variant generation, scene **tintinify** (Tintin
+  LoRA + ControlNet), and pet composite.
 
 ## Environment
 

@@ -13,6 +13,7 @@ from models.schemas import (
     GenerateComicRequest,
     GenerateComicResponse,
     Panel,
+    RegeneratePanelRequest,
 )
 from services import layout, streetview
 from services.comfyui_client import ComfyUIClient
@@ -42,8 +43,15 @@ TYPE_KEYWORDS = {
 }
 
 
-def _pick_variant(selected: list[dict], wp_type: str, idx: int) -> dict:
-    """Choose the selected variant whose pose best fits this stop's type."""
+def _pick_variant(selected: list[dict], wp_type: str, order: int, scene_idx: int) -> dict:
+    """Choose which character/pose stars in a panel.
+
+    First roll (scene_idx 0): the selected variant whose pose best fits the
+    stop's type. Re-rolls rotate through the rest, so regenerating swaps the
+    character/pose too (alongside the new scene).
+    """
+    if scene_idx > 0:
+        return selected[(order + scene_idx) % len(selected)]
     keywords = TYPE_KEYWORDS.get(wp_type, [])
     best, best_score = None, -1
     for v in selected:
@@ -52,8 +60,41 @@ def _pick_variant(selected: list[dict], wp_type: str, idx: int) -> dict:
         if score > best_score:
             best, best_score = v, score
     if best is None or best_score <= 0:
-        return selected[idx % len(selected)]
+        return selected[order % len(selected)]
     return best
+
+
+def _panel_url(comic_id: str, path: str) -> str:
+    return f"/static/generated/comics/{comic_id}/{os.path.basename(path)}"
+
+
+def _build_panel(comic: dict, order: int, scene_idx: int) -> Panel:
+    """(Re)build a single panel at the given scene index and return its Panel.
+
+    Updates the stored per-panel state + panel_paths so exports use the latest.
+    The `scene_idx` is the re-roll counter — it seeds the scene source (today a
+    varied placeholder; later candidate #scene_idx from Mapillary) and rotates
+    the character pose.
+    """
+    meta = comic["panels"][order]
+    wp = meta["wp"]
+    location = wp["name"] or f"Stop {order + 1}"
+    suffix = f"{order:02d}_v{scene_idx}"
+
+    # 1) scene source (stub: seeded themed scene). Seed is unique per panel+roll.
+    scene_path = os.path.join(comic["dir"], f"scene_{suffix}.png")
+    seed = (order * 1000 + scene_idx) & 0xFFFF
+    streetview.fetch_street_view(wp["lat"], wp["lng"], wp["type"], location, scene_path, seed=seed)
+    # 2) tintinify (stub: pass-through)
+    scene_path = comfy.tintinify_scene(scene_path)
+    # 3) composite the chosen character into the scene
+    variant = _pick_variant(comic["selected"], wp["type"], order, scene_idx)  # noqa: F841 (used once real)
+    panel_path = os.path.join(comic["dir"], f"panel_{suffix}.png")
+    make_panel(scene_path, comic["pet"]["image_path"], location, panel_path, index=order + scene_idx)
+
+    meta["scene_idx"] = scene_idx
+    comic["panel_paths"][order] = panel_path
+    return Panel(order=order, image_url=_panel_url(comic["comic_id"], panel_path), location_name=location, type=wp["type"])
 
 
 @router.post("/generate", response_model=GenerateComicResponse)
@@ -73,34 +114,36 @@ async def generate_comic(req: GenerateComicRequest) -> GenerateComicResponse:
     comic_dir = os.path.join(GENERATED_DIR, "comics", comic_id)
     waypoints = sorted(req.waypoints, key=lambda w: w.order)[:MAX_STOPS]
 
-    panels: list[Panel] = []
-    panel_paths: list[str] = []
-    for i, wp in enumerate(waypoints):
-        location = wp.name or f"Stop {i + 1}"
-        scene_path = os.path.join(comic_dir, f"scene_{i:02d}.png")
-        # 1) fetch street view (stub: themed scene by place type)
-        streetview.fetch_street_view(wp.lat, wp.lng, wp.type, location, scene_path)
-        # 2) tintinify (stub: pass-through)
-        scene_path = comfy.tintinify_scene(scene_path)
-        # 3) composite the pet character into the scene (Pillow compositor)
-        variant = _pick_variant(selected, wp.type, i)
-        panel_path = os.path.join(comic_dir, f"panel_{i:02d}.png")
-        make_panel(scene_path, pet["image_path"], location, panel_path, index=i)
-        panel_paths.append(panel_path)
-        panels.append(
-            Panel(
-                order=i,
-                image_url=f"/static/generated/comics/{comic_id}/panel_{i:02d}.png",
-                location_name=location,
-                type=wp.type,
-            )
-        )
+    # Store everything needed to (re)build any single panel later: the pet, the
+    # chosen characters, and per-panel waypoint + roll state. panel_paths is the
+    # current image per panel, used by /export.
+    comic = {
+        "comic_id": comic_id,
+        "dir": comic_dir,
+        "pet": pet,
+        "selected": selected,
+        "panel_paths": [None] * len(waypoints),
+        "panels": [
+            {"order": i, "wp": {"lat": wp.lat, "lng": wp.lng, "type": wp.type, "name": wp.name}, "scene_idx": 0}
+            for i, wp in enumerate(waypoints)
+        ],
+    }
+    COMICS[comic_id] = comic
 
-    # Keep the panel paths so /export can build a print template on demand
-    # (strip or zine, with blank-cell captions chosen at download time).
-    COMICS[comic_id] = {"dir": comic_dir, "panel_paths": panel_paths}
-
+    panels = [_build_panel(comic, i, 0) for i in range(len(waypoints))]
     return GenerateComicResponse(comic_id=comic_id, panels=panels)
+
+
+@router.post("/regenerate-panel", response_model=Panel)
+async def regenerate_panel(req: RegeneratePanelRequest) -> Panel:
+    """Re-roll a single panel — a new scene (and rotated pose) for that stop."""
+    comic = COMICS.get(req.comic_id)
+    if comic is None:
+        raise HTTPException(status_code=404, detail="Unknown comic — generate one first.")
+    if req.order < 0 or req.order >= len(comic["panels"]):
+        raise HTTPException(status_code=400, detail="No such panel.")
+    next_idx = comic["panels"][req.order]["scene_idx"] + 1
+    return _build_panel(comic, req.order, next_idx)
 
 
 @router.post("/export", response_model=ExportResponse)

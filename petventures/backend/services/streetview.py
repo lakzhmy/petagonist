@@ -1,23 +1,35 @@
-"""Street View fetching — STUBBED with themed scene generation.
+"""Scene source — STUBBED with themed, seeded scene generation.
 
-The real implementation will call the Google Street View Static API. For now we
-draw a bold, flat "ligne claire"-ish scene whose look depends on the waypoint's
-place type (park / water / street / plaza / building) — so panels feel varied
-and connected to the route the user actually drew.
+This is the seam where real imagery plugs in later. `fetch_street_view` is the
+one function the comic pipeline calls to get a scene image for a coordinate.
+
+  today  → draw a bold "ligne claire"-ish scene whose look depends on the
+           waypoint's place type (park / water / street / plaza / building),
+           varied by `seed` so re-rolling a panel gives a visibly different shot.
+  later  → swap this body for a Mapillary query (rank candidates near the point,
+           return candidate #seed's photo) or Google Street View. Nothing else
+           in the app changes — the signature stays the same.
 """
 
 from __future__ import annotations
 
 import os
+import random
 
 from PIL import Image, ImageDraw
 
 from .placeholders import _load_font
 
-# STREETVIEW_API_KEY = os.environ.get("STREETVIEW_API_KEY")  # used by real impl
+# MAPILLARY_TOKEN = os.environ.get("MAPILLARY_TOKEN")  # used by the real impl
 
-SKY = "#BFE8FF"
-SKY_LOW = "#EAF7FF"
+# A small set of sky palettes; the seed picks one, so re-rolls read as different
+# times of day — the cheapest "this is a different photo" signal.
+SKIES = [
+    ("#BFE8FF", "#EAF7FF"),  # clear day
+    ("#FFD8A8", "#FFF3E0"),  # golden hour
+    ("#A8C8FF", "#DCE8FF"),  # cool midday
+    ("#FFC2D1", "#FFE8EF"),  # pink dusk
+]
 
 
 def _vgrad(img: Image.Image, box, top, bottom) -> None:
@@ -37,24 +49,28 @@ def _bird(d: ImageDraw.ImageDraw, x: int, y: int, s: int, color="#1A1A2E") -> No
     d.arc((x, y - s, x + s, y + s), 200, 340, fill=color, width=3)
 
 
-def _scene_park(img, w, h):
-    _vgrad(img, (0, 0, w, int(h * 0.6)), SKY, SKY_LOW)
+def _scene_park(img, w, h, rng, sky):
+    _vgrad(img, (0, 0, w, int(h * 0.6)), sky[0], sky[1])
     d = ImageDraw.Draw(img)
     d.rectangle((0, int(h * 0.6), w, h), fill="#7ED957")
     d.rectangle((0, int(h * 0.78), w, h), fill="#5FB73F")
     # path
     d.polygon([(w * 0.42, h), (w * 0.58, h), (w * 0.54, h * 0.6), (w * 0.46, h * 0.6)], fill="#E9DFC8")
-    # trees
-    for tx, ty, r in [(0.16, 0.62, 0.13), (0.82, 0.6, 0.16), (0.3, 0.58, 0.1)]:
+    # trees — jittered count + positions
+    n = rng.randint(3, 4)
+    for _ in range(n):
+        tx = rng.uniform(0.08, 0.9)
+        ty = rng.uniform(0.56, 0.64)
+        r = rng.uniform(0.1, 0.16)
         cx, cy, rr = w * tx, h * ty, w * r
         d.rectangle((cx - rr * 0.12, cy, cx + rr * 0.12, cy + rr * 0.9), fill="#7A4A2B")
         d.ellipse((cx - rr, cy - rr, cx + rr, cy + rr * 0.6), fill="#2E9E4F")
-    for bx, by in [(0.5, 0.18), (0.58, 0.22), (0.66, 0.16)]:
-        _bird(d, int(w * bx), int(h * by), 12)
+    for _ in range(rng.randint(2, 4)):
+        _bird(d, int(w * rng.uniform(0.45, 0.7)), int(h * rng.uniform(0.14, 0.26)), 12)
 
 
-def _scene_water(img, w, h):
-    _vgrad(img, (0, 0, w, int(h * 0.5)), SKY, SKY_LOW)
+def _scene_water(img, w, h, rng, sky):
+    _vgrad(img, (0, 0, w, int(h * 0.5)), sky[0], sky[1])
     d = ImageDraw.Draw(img)
     _vgrad(img, (0, int(h * 0.5), w, h), "#3FA9F5", "#1E6FB8")
     d.line([(0, h * 0.5), (w, h * 0.5)], fill="#1E6FB8", width=3)
@@ -63,24 +79,25 @@ def _scene_water(img, w, h):
         for x in range(0, w, 60):
             off = (i % 2) * 30
             d.line([(x + off, y), (x + off + 22, y)], fill="#BFE8FF", width=3)
-    # little sailboat
-    bx, by = int(w * 0.7), int(h * 0.5)
+    # little sailboat at a jittered position
+    bx, by = int(w * rng.uniform(0.5, 0.8)), int(h * 0.5)
     d.polygon([(bx, by), (bx + 46, by), (bx + 34, by + 18), (bx + 8, by + 18)], fill="#F5F0EB")
     d.polygon([(bx + 22, by - 40), (bx + 22, by - 2), (bx + 48, by - 2)], fill="#FF5C35")
-    for bxx, byy in [(0.2, 0.16), (0.28, 0.2)]:
-        _bird(d, int(w * bxx), int(h * byy), 11)
+    for _ in range(rng.randint(2, 3)):
+        _bird(d, int(w * rng.uniform(0.15, 0.4)), int(h * rng.uniform(0.14, 0.24)), 11)
 
 
-def _scene_buildings(img, w, h, road=True):
-    _vgrad(img, (0, 0, w, h), SKY, SKY_LOW)
+def _scene_buildings(img, w, h, rng, sky, road=True):
+    _vgrad(img, (0, 0, w, h), sky[0], sky[1])
     d = ImageDraw.Draw(img)
     colors = ["#FFB37A", "#F58CB0", "#9C8CF5", "#7ED957", "#FFD700", "#5EC5FF"]
+    rng.shuffle(colors)
     x = 0
     i = 0
     base = int(h * (0.82 if road else 0.95))
     while x < w:
         bw = int(w * (0.1 + 0.05 * (i % 3)))
-        bh = int(h * (0.32 + 0.12 * ((i * 3) % 4)))
+        bh = int(h * (0.3 + 0.16 * rng.random()))
         top = base - bh
         d.rectangle((x, top, x + bw - 6, base), fill=colors[i % len(colors)], outline="#1A1A2E", width=2)
         for wy in range(top + 14, base - 14, 26):
@@ -94,11 +111,12 @@ def _scene_buildings(img, w, h, road=True):
             d.rectangle((rx, int((base + h) / 2) - 3, rx + 34, int((base + h) / 2) + 3), fill="#FFD700")
 
 
-def _scene_plaza(img, w, h):
-    _vgrad(img, (0, 0, w, int(h * 0.55)), SKY, SKY_LOW)
+def _scene_plaza(img, w, h, rng, sky):
+    _vgrad(img, (0, 0, w, int(h * 0.55)), sky[0], sky[1])
     d = ImageDraw.Draw(img)
     # distant low buildings
     colors = ["#FFB37A", "#F58CB0", "#9C8CF5", "#7ED957"]
+    rng.shuffle(colors)
     x, i = 0, 0
     while x < w:
         bw = int(w * 0.16)
@@ -112,9 +130,9 @@ def _scene_plaza(img, w, h):
         d.line([(0, gy), (w, gy)], fill="#D2C6A6", width=2)
     for gx in range(0, w, 60):
         d.line([(gx, int(h * 0.55)), (gx, h)], fill="#D2C6A6", width=2)
-    # pigeons on the ground
-    for px, py in [(0.3, 0.8), (0.4, 0.85), (0.62, 0.78), (0.7, 0.86)]:
-        cx, cy = int(w * px), int(h * py)
+    # pigeons on the ground at jittered spots
+    for _ in range(rng.randint(3, 5)):
+        cx, cy = int(w * rng.uniform(0.25, 0.75)), int(h * rng.uniform(0.74, 0.88))
         d.ellipse((cx - 10, cy - 7, cx + 10, cy + 7), fill="#7A7A88")
         d.ellipse((cx + 6, cy - 12, cx + 16, cy - 2), fill="#7A7A88")
 
@@ -123,9 +141,9 @@ SCENES = {
     "park": _scene_park,
     "water": _scene_water,
     "plaza": _scene_plaza,
-    "building": lambda img, w, h: _scene_buildings(img, w, h, road=False),
-    "street": lambda img, w, h: _scene_buildings(img, w, h, road=True),
-    "place": lambda img, w, h: _scene_buildings(img, w, h, road=True),
+    "building": lambda img, w, h, rng, sky: _scene_buildings(img, w, h, rng, sky, road=False),
+    "street": lambda img, w, h, rng, sky: _scene_buildings(img, w, h, rng, sky, road=True),
+    "place": lambda img, w, h, rng, sky: _scene_buildings(img, w, h, rng, sky, road=True),
 }
 
 
@@ -136,21 +154,25 @@ def fetch_street_view(
     location_name: str | None = None,
     out_path: str = "scene.png",
     size: tuple[int, int] = (900, 600),
+    seed: int = 0,
 ) -> str:
     """Return a path to a scene image for the given coordinates.
 
-    Real implementation (commented) would fetch the actual panorama:
+    `seed` selects a variation (sky palette + element jitter) so re-rolling a
+    panel yields a different scene. The real implementation would instead pick
+    candidate #seed from a ranked Mapillary / Street View result set:
 
-        # url = (
-        #     "https://maps.googleapis.com/maps/api/streetview"
-        #     f"?size={size[0]}x{size[1]}&location={lat},{lng}"
-        #     f"&key={STREETVIEW_API_KEY}"
-        # )
-        # img_bytes = requests.get(url).content
+        # bbox = around(lat, lng, ~40m)
+        # imgs = mapillary_images(bbox, token=MAPILLARY_TOKEN)
+        # ranked = rank_by(distance, recency, heading)
+        # chosen = ranked[seed % len(ranked)]
+        # img_bytes = requests.get(chosen["thumb_2048_url"]).content
     """
+    rng = random.Random(seed)
+    sky = rng.choice(SKIES)
     w, h = size
-    img = Image.new("RGB", (w, h), SKY)
-    SCENES.get(place_type, SCENES["place"])(img, w, h)
+    img = Image.new("RGB", (w, h), sky[0])
+    SCENES.get(place_type, SCENES["place"])(img, w, h, rng, sky)
 
     # Small location tag in the corner.
     d = ImageDraw.Draw(img)

@@ -70,3 +70,11 @@ class ExportRequest(BaseModel):
 
 class ExportResponse(BaseModel):
     url: str
+
+
+# ---- Per-panel regenerate (re-roll the scene for one stop) -----------------
+
+
+class RegeneratePanelRequest(BaseModel):
+    comic_id: str
+    order: int
