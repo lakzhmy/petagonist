@@ -16,5 +16,5 @@ node_modules/
 dist/
 
 # Generated + uploaded media (runtime artifacts)
-petventures/backend/static/uploads/
-petventures/backend/static/generated/
+petagonist/backend/static/uploads/
+petagonist/backend/static/generated/

@@ -56,7 +56,7 @@ export default function ComicStrip({ comic, onRestart }) {
       })
       const a = document.createElement('a')
       a.href = url
-      a.download = `petventures-${template}.${format}`
+      a.download = `petagonist-${template}.${format}`
       document.body.appendChild(a)
       a.click()
       a.remove()

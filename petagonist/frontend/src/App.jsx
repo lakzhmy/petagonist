@@ -6,7 +6,7 @@ import ComingSoonPage from './pages/ComingSoonPage'
 export default function App() {
   return (
     <Routes>
-      {/* Petventures (the Flâneur experience) is the demo — it owns the root. */}
+      {/* Petagonist (the Flâneur experience) is the demo — it owns the root. */}
       <Route path="/" element={<FlaneurPage />} />
       {/* Alias kept so the parked landing page's links still resolve. */}
       <Route path="/flaneur" element={<FlaneurPage />} />

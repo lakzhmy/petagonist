@@ -11,7 +11,7 @@ import { useMapWaypoints } from '../hooks/useMapWaypoints'
 import { uploadPet, generateVariants, generateComic } from '../lib/api'
 
 /**
- * FlaneurPage — the Petventures experience and the app's home (root route).
+ * FlaneurPage — the Petagonist experience and the app's home (root route).
  * The 3-step spine: Your Pet → The Route → The Comic.
  * Slice 2 wires Step 1 (upload + character gallery). Steps 2–3 are placeholders.
  */

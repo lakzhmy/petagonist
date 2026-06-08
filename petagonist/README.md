@@ -1,9 +1,9 @@
-# Petventures 🐾
+# Petagonist 🐾
 
 Turn your pet into a Tintin-style adventurer and send them strolling through a
 real city — the result is an illustrated comic strip. A MACAD thesis project.
 
-> **Status:** the demo focuses on the single **Petventures** experience
+> **Status:** the demo focuses on the single **Petagonist** experience
 > (upload → pick characters → draw a route → comic). The I-SPY and IsoBuild
 > modes are parked (hidden), and all heavy generation is **stubbed** with
 > on-brand placeholders so everything runs without ComfyUI or API keys.
@@ -42,14 +42,14 @@ Then open http://localhost:5173.
 ## Project layout
 
 ```
-petventures/
+petagonist/
 ├── frontend/   # React app (design system, flow, components)
 └── backend/    # FastAPI (pet upload, stubbed variant generation, static media)
 ```
 
 ## What works today
 
-The full Petventures flow runs end-to-end (all generation stubbed):
+The full Petagonist flow runs end-to-end (all generation stubbed):
 
 - **Step 1 — Your Pet:** give a photo, a description, or both (either is enough)
   → backend saves it → 8–12 character variants are generated (stubbed: the pet

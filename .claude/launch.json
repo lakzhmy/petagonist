@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "petventures-frontend",
+      "name": "petagonist-frontend",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "cwd": "petventures/frontend",
+      "cwd": "petagonist/frontend",
       "port": 5173
     }
   ]

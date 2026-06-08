@@ -3,7 +3,7 @@ import PawIcon from '../ui/PawIcon'
 import Tag from '../ui/Tag'
 
 // Mode switcher — only used by the parked multi-mode landing (variant="modes").
-// The live Petventures demo uses the minimal navbar (logo only).
+// The live Petagonist demo uses the minimal navbar (logo only).
 const MODES = [
   { to: '/flaneur', label: 'Pet Flâneur', ready: true },
   { to: '/ispy', label: 'I-SPY', ready: false },
@@ -17,7 +17,7 @@ function Logo({ className = '' }) {
         <PawIcon size={22} color="var(--color-grape)" />
       </span>
       <span className="font-display text-2xl font-black tracking-tight text-white">
-        Pet<span className="text-sun">ventures</span>
+        Pet<span className="text-sun">agonist</span>
       </span>
     </Link>
   )
@@ -26,7 +26,7 @@ function Logo({ className = '' }) {
 /**
  * Navbar
  *  - variant="minimal" (default): just the centered logo. Used by the
- *    single-experience Petventures demo.
+ *    single-experience Petagonist demo.
  *  - variant="modes": logo + mode switcher. Kept for the parked landing page.
  */
 export default function Navbar({ variant = 'minimal' }) {

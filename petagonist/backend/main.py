@@ -1,4 +1,4 @@
-"""Petventures backend — FastAPI app entry point.
+"""Petagonist backend — FastAPI app entry point.
 
 Run from the backend/ directory:
     uvicorn main:app --reload --port 8000
@@ -44,7 +44,7 @@ STATIC_DIR = os.path.join(BACKEND_ROOT, "static")
 os.makedirs(os.path.join(STATIC_DIR, "uploads"), exist_ok=True)
 os.makedirs(os.path.join(STATIC_DIR, "generated"), exist_ok=True)
 
-app = FastAPI(title="Petventures API", version="0.1.0")
+app = FastAPI(title="Petagonist API", version="0.1.0")
 
 # Allow the Vite dev server to call us directly (in addition to its proxy).
 app.add_middleware(
@@ -66,4 +66,4 @@ app.include_router(flaneur.router)
 
 @app.get("/api/health")
 async def health() -> dict:
-    return {"status": "ok", "service": "petventures"}
+    return {"status": "ok", "service": "petagonist"}

@@ -51,7 +51,7 @@ def _mapillary_scene(lat, lng, seed, location_name, out_path, size, token) -> st
     for meters in SEARCH_RADII_M:
         qs = urllib.parse.urlencode({"fields": fields, "bbox": _bbox(lat, lng, meters), "limit": 40})
         url = f"{MAPILLARY_GRAPH}?access_token={token}&{qs}"
-        req = urllib.request.Request(url, headers={"User-Agent": "petventures/0.1"})
+        req = urllib.request.Request(url, headers={"User-Agent": "petagonist/0.1"})
         with urllib.request.urlopen(req, timeout=15) as r:
             data = (json.load(r) or {}).get("data", [])
         if data:
@@ -70,7 +70,7 @@ def _mapillary_scene(lat, lng, seed, location_name, out_path, size, token) -> st
     if not thumb:
         return None
 
-    ireq = urllib.request.Request(thumb, headers={"User-Agent": "petventures/0.1"})
+    ireq = urllib.request.Request(thumb, headers={"User-Agent": "petagonist/0.1"})
     with urllib.request.urlopen(ireq, timeout=20) as r:
         photo = Image.open(io.BytesIO(r.read())).convert("RGB")
 

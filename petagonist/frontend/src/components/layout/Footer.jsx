@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-2 text-center text-sm">
         <div className="flex items-center gap-2 font-display font-bold text-white">
           <PawIcon size={18} color="var(--color-sun)" />
-          Petventures
+          Pet<span className="text-sun">agonist</span>
         </div>
         <p>
           A MACAD thesis project · Turn your pet into a Tintin-style adventurer.

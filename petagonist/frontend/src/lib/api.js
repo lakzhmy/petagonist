@@ -1,5 +1,5 @@
 /**
- * Tiny fetch wrapper for the Petventures backend.
+ * Tiny fetch wrapper for the Petagonist backend.
  * Calls are relative — the Vite dev server proxies /api and /static to :8000.
  */
 

@@ -13,7 +13,7 @@ import textwrap
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont, ImageOps
 
-# --- Petventures palette (mirrors the frontend design tokens) --------------
+# --- Petagonist palette (mirrors the frontend design tokens) --------------
 PALETTE = [
     ("#FF5C35", "#FFFFFF"),  # tang  / white text
     ("#4A2FBD", "#FFFFFF"),  # grape / white

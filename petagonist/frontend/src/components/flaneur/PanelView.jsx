@@ -2,7 +2,7 @@ import { getType } from '../../utils/waypointTypes'
 
 /**
  * PanelView — a single comic frame in the result grid. The image already carries
- * its caption + frame from the backend; here we add the soft Petventures frame,
+ * its caption + frame from the backend; here we add the soft Petagonist frame,
  * paper texture, a number badge, a type tag, and a ↻ re-roll button that swaps
  * this stop for a different scene + pose.
  */
