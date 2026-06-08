@@ -15,6 +15,21 @@ export const WAYPOINT_TYPES = {
 export const getType = (type) => WAYPOINT_TYPES[type] || WAYPOINT_TYPES.place
 
 /**
+ * Emoji that burst out of the click point, themed by place type — the playful
+ * "this is a park!" / "this is water!" feedback when you drop a stop.
+ */
+export const BURST_ICONS = {
+  park: ['🍃', '🐦', '🌿', '🌳', '🍂'],
+  water: ['💧', '🌊', '💦', '🐟', '💧'],
+  plaza: ['🕊️', '✨', '🕊️', '🥖', '✨'],
+  building: ['✨', '🏛️', '🪟', '⭐', '✨'],
+  street: ['🚶', '💨', '🍂', '🛵', '✨'],
+  place: ['✨', '⭐', '💫', '✨', '⭐'],
+}
+
+export const getBurst = (type) => BURST_ICONS[type] || BURST_ICONS.place
+
+/**
  * Classify raw MapLibre features (from queryRenderedFeatures) into one of our
  * types. Tuned to the OpenMapTiles schema that OpenFreeMap serves.
  * Priority: water > park > plaza > street > building.

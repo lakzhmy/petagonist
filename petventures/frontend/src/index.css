@@ -194,6 +194,65 @@ h4 {
   padding: 12px 14px;
 }
 
+/* ============================================================
+   Map click burst — themed emoji + ripple at the drop point.
+   Elements are appended over the map container, then self-remove
+   on animationend (see MapWithWaypoints.spawnBurst).
+   ============================================================ */
+.pv-burst {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+}
+
+/* Expanding ring */
+.pv-ripple {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  border: 3px solid var(--color-grape-light);
+  opacity: 0.7;
+  animation: pv-ripple 0.7s var(--ease-spring) forwards;
+}
+@keyframes pv-ripple {
+  from {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0.7;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(3.2);
+    opacity: 0;
+  }
+}
+
+/* Floating emoji particle — direction via --dx/--dy/--rot inline vars.
+   Opacity holds at 1 from 18%→72% so the burst stays readable through the
+   spring-driven flight, then fades out. */
+.pv-particle {
+  font-size: 24px;
+  line-height: 1;
+  animation: pv-particle 1.1s var(--ease-spring) forwards;
+}
+@keyframes pv-particle {
+  0% {
+    transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.05)
+      rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
 /* Sparkle twinkle */
 @keyframes twinkle {
   0%,

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import SearchBox from './SearchBox'
-import { classifyFeatures } from '../../utils/waypointTypes'
+import { classifyFeatures, getBurst } from '../../utils/waypointTypes'
 
 // Barcelona — the user is at IAAC.
 const BARCELONA = { center: [2.1734, 41.3851], zoom: 13 }
@@ -22,6 +22,7 @@ const routeGeoJSON = (waypoints) => ({
  */
 export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) {
   const containerRef = useRef(null)
+  const burstLayerRef = useRef(null)
   const mapRef = useRef(null)
   const readyRef = useRef(false)
   const markersRef = useRef(new Map()) // id -> { marker, el }
@@ -71,6 +72,7 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
       ])
       const type = classifyFeatures(feats)
       stateRef.current.onAdd(e.lngLat.lng, e.lngLat.lat, { type })
+      spawnBurst(e.point.x, e.point.y, type)
     })
 
     return () => {
@@ -129,6 +131,40 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
     if (src) src.setData(routeGeoJSON(waypoints))
   }
 
+  // -- Themed click burst ---------------------------------------------------
+  // Appends a ripple + a fan of emoji at (x,y) pixel; each self-removes on
+  // animationend. Only uses refs, so the map handler's closure can call it.
+  function spawnBurst(x, y, type) {
+    const layer = burstLayerRef.current
+    if (!layer) return
+    const icons = getBurst(type)
+
+    const ripple = document.createElement('div')
+    ripple.className = 'pv-burst pv-ripple'
+    ripple.style.left = `${x}px`
+    ripple.style.top = `${y}px`
+    ripple.addEventListener('animationend', () => ripple.remove())
+    layer.appendChild(ripple)
+
+    const n = icons.length
+    icons.forEach((icon, i) => {
+      const p = document.createElement('div')
+      p.className = 'pv-burst pv-particle'
+      p.textContent = icon
+      p.style.left = `${x}px`
+      p.style.top = `${y}px`
+      // Fan upward: spread the icons across an arc centered on straight-up.
+      const ang = ((-90 + (i - (n - 1) / 2) * 30) * Math.PI) / 180
+      const dist = 44 + Math.random() * 28
+      p.style.setProperty('--dx', `${(Math.cos(ang) * dist).toFixed(0)}px`)
+      p.style.setProperty('--dy', `${(Math.sin(ang) * dist).toFixed(0)}px`)
+      p.style.setProperty('--rot', `${(Math.random() * 60 - 30).toFixed(0)}deg`)
+      p.style.animationDelay = `${i * 40}ms`
+      p.addEventListener('animationend', () => p.remove())
+      layer.appendChild(p)
+    })
+  }
+
   // -- Camera helpers -------------------------------------------------------
   function fitTo(points, { animate = true } = {}) {
     const map = mapRef.current
@@ -147,6 +183,12 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
   function handlePick({ lng, lat, type, name }) {
     if (stateRef.current.atMax) return
     onAdd(lng, lat, { type, name })
+    // Burst at the picked point's current screen position (before the camera moves).
+    const map = mapRef.current
+    if (map) {
+      const pt = map.project([lng, lat])
+      spawnBurst(pt.x, pt.y, type)
+    }
     // Google-Maps feel: fit to all stops once there are 2+, else fly to the one.
     fitTo([...stateRef.current.waypoints, { lng, lat }])
   }
@@ -154,6 +196,8 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
+      {/* Themed click bursts render into this empty, React-owned overlay. */}
+      <div ref={burstLayerRef} className="pointer-events-none absolute inset-0 z-[5] overflow-hidden" />
       <SearchBox onPick={handlePick} />
       {waypoints.length >= 2 && (
         <button
