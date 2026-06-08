@@ -1,24 +1,23 @@
 import { getType } from '../../utils/waypointTypes'
 
 /**
- * PanelView — a single comic frame. The image already carries its caption +
- * frame from the backend; here we add the playful tilt, paper texture, and a
- * little type tag so each panel has personality.
+ * PanelView — a single comic frame in the result grid. The image already carries
+ * its caption + frame from the backend; here we add the soft Petventures frame,
+ * paper texture, a number badge, and a little type tag.
  */
-const TILTS = ['tilt-left', 'tilt-right', '', 'tilt-right', 'tilt-left']
-
-export default function PanelView({ panel, index = 0, vertical = false }) {
+export default function PanelView({ panel, index = 0 }) {
   const type = getType(panel.type)
   return (
-    <figure
-      className={`paper-noise spring relative shrink-0 ${TILTS[index % TILTS.length]} ${
-        vertical ? 'w-full max-w-2xl' : 'w-[320px]'
-      } hover:rotate-0 hover:scale-[1.02]`}
-    >
-      <div className="comic-frame overflow-hidden bg-white">
-        <img src={panel.image_url} alt={panel.location_name} className="block w-full" loading="lazy" />
+    <figure className="paper-noise spring relative w-full hover:scale-[1.02]">
+      <div className="pv-frame overflow-hidden bg-white">
+        <img
+          src={panel.image_url}
+          alt={panel.location_name}
+          className="block w-full"
+          loading="lazy"
+        />
       </div>
-      <span className="absolute -right-2 -top-2 grid h-9 w-9 place-items-center rounded-full border-2 border-ink bg-sun font-display text-sm font-black text-ink shadow-[2px_2px_0_0_var(--color-ink)]">
+      <span className="absolute -right-2 -top-2 grid h-9 w-9 place-items-center rounded-full bg-sun font-display text-sm font-black text-ink shadow-[var(--shadow-lift)]">
         {index + 1}
       </span>
       <figcaption className="mt-2 flex items-center justify-center gap-1.5 text-sm font-bold text-white/80">

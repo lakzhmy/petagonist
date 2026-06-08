@@ -17,10 +17,13 @@ async function handle(res) {
   return res.json()
 }
 
-/** Upload a pet photo + description. Returns { pet_id, image_url, description }. */
+/**
+ * Upload a pet photo and/or description (either is enough).
+ * Returns { pet_id, image_url, description }.
+ */
 export async function uploadPet(file, description) {
   const form = new FormData()
-  form.append('image', file)
+  if (file) form.append('image', file)
   form.append('description', description ?? '')
   const res = await fetch('/api/pet/upload', { method: 'POST', body: form })
   return handle(res)
@@ -42,6 +45,20 @@ export async function generateComic(payload) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+  })
+  return handle(res)
+}
+
+/**
+ * Render a printable template for a generated comic.
+ * args: { comic_id, template: 'strip'|'zine', format?: 'pdf'|'png', captions?: {idx: text} }
+ * Returns { url }.
+ */
+export async function exportComic({ comic_id, template, format = 'pdf', captions = {} }) {
+  const res = await fetch('/api/flaneur/export', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ comic_id, template, format, captions }),
   })
   return handle(res)
 }

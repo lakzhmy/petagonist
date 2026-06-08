@@ -8,7 +8,7 @@ const MAX = 5
  * PetGallery — grid of generated character variants. Select 1–MAX favourites;
  * a "Continue" CTA appears once at least one is chosen.
  */
-export default function PetGallery({ variants, selectedIds, onToggle, onRegenerate, onContinue }) {
+export default function PetGallery({ variants, selectedIds, onToggle, onRegenerate, onContinue, onBack }) {
   const selected = new Set(selectedIds)
   const atMax = selected.size >= MAX
 
@@ -69,6 +69,11 @@ export default function PetGallery({ variants, selectedIds, onToggle, onRegenera
 
       {/* Actions */}
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        {onBack && (
+          <Button variant="ghost" size="md" onClick={onBack}>
+            ← Different pet
+          </Button>
+        )}
         <Button variant="ghost" size="md" onClick={onRegenerate}>
           ↻ Regenerate
         </Button>

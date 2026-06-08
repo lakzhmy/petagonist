@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 class PetUploadResponse(BaseModel):
     pet_id: str
-    image_url: str
+    image_url: str | None = None  # None when the pet was described but not photographed
     description: str
 
 
@@ -55,3 +55,18 @@ class GenerateComicResponse(BaseModel):
     panels: list[Panel]
     strip_url: str | None = None
     pdf_url: str | None = None
+
+
+# ---- Print-template export (strip / zine) ---------------------------------
+
+
+class ExportRequest(BaseModel):
+    comic_id: str
+    template: str = "strip"  # 'strip' | 'zine'
+    format: str = "pdf"  # 'pdf' | 'png'
+    # Captions for blank cells, keyed by slot index ("0".."7") as a string.
+    captions: dict[str, str] = Field(default_factory=dict)
+
+
+class ExportResponse(BaseModel):
+    url: str

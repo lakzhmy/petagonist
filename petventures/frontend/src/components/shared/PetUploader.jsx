@@ -85,7 +85,9 @@ export default function PetUploader({ onSubmit, loading = false }) {
             <p className="mt-4 font-display text-xl font-black text-white">
               Drop your pet&apos;s photo here
             </p>
-            <p className="mt-1 text-sm text-white/60">or click to browse · JPG, PNG, WebP</p>
+            <p className="mt-1 text-sm text-white/60">
+              or click to browse · JPG, PNG, WebP · <span className="italic">optional</span>
+            </p>
           </div>
         )}
       </div>
@@ -106,17 +108,20 @@ export default function PetUploader({ onSubmit, loading = false }) {
         />
       </label>
 
-      {/* CTA */}
-      <div className="mt-7 flex justify-center">
+      {/* CTA — a photo OR a description is enough (both is best). */}
+      <div className="mt-7 flex flex-col items-center gap-2">
         <Button
           variant="tang"
           size="lg"
-          disabled={!file || loading}
+          disabled={(!file && !description.trim()) || loading}
           onClick={() => onSubmit?.({ file, description })}
         >
           <Sparkle size={18} color="white" />
           {loading ? 'Conjuring characters…' : 'Generate Character'}
         </Button>
+        <p className="text-sm text-white/60">
+          Add a photo, a description, or both — whatever you&apos;ve got. 🐾
+        </p>
       </div>
     </div>
   )

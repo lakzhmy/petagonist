@@ -7,7 +7,13 @@ import uuid
 
 from fastapi import APIRouter, HTTPException
 
-from models.schemas import GenerateComicRequest, GenerateComicResponse, Panel
+from models.schemas import (
+    ExportRequest,
+    ExportResponse,
+    GenerateComicRequest,
+    GenerateComicResponse,
+    Panel,
+)
 from services import layout, streetview
 from services.comfyui_client import ComfyUIClient
 from services.compositor import make_panel
@@ -17,6 +23,13 @@ from .pet import GENERATED_DIR, PETS, comfy as _comfy  # reuse pet store + clien
 router = APIRouter(prefix="/api/flaneur", tags=["flaneur"])
 
 comfy: ComfyUIClient = _comfy
+
+MAX_STOPS = 8  # caps the comic at 8 panels (one printable page)
+
+# Generated comics, keyed by comic_id, so /export can re-lay the panels into a
+# print template at download time (with any blank-cell captions). In-memory for
+# the demo; the panel PNGs themselves persist on disk.
+COMICS: dict[str, dict] = {}
 
 # Which pose keywords suit each place type — lets the route theme the comic.
 TYPE_KEYWORDS = {
@@ -58,7 +71,7 @@ async def generate_comic(req: GenerateComicRequest) -> GenerateComicResponse:
 
     comic_id = uuid.uuid4().hex[:12]
     comic_dir = os.path.join(GENERATED_DIR, "comics", comic_id)
-    waypoints = sorted(req.waypoints, key=lambda w: w.order)
+    waypoints = sorted(req.waypoints, key=lambda w: w.order)[:MAX_STOPS]
 
     panels: list[Panel] = []
     panel_paths: list[str] = []
@@ -83,15 +96,25 @@ async def generate_comic(req: GenerateComicRequest) -> GenerateComicResponse:
             )
         )
 
-    # 4) lay out a downloadable strip + PDF
-    strip_path = os.path.join(comic_dir, "strip.png")
-    pdf_path = os.path.join(comic_dir, "comic.pdf")
-    layout.build_strip(panel_paths, strip_path, orientation="horizontal")
-    layout.build_pdf(panel_paths, pdf_path)
+    # Keep the panel paths so /export can build a print template on demand
+    # (strip or zine, with blank-cell captions chosen at download time).
+    COMICS[comic_id] = {"dir": comic_dir, "panel_paths": panel_paths}
 
-    return GenerateComicResponse(
-        comic_id=comic_id,
-        panels=panels,
-        strip_url=f"/static/generated/comics/{comic_id}/strip.png",
-        pdf_url=f"/static/generated/comics/{comic_id}/comic.pdf",
-    )
+    return GenerateComicResponse(comic_id=comic_id, panels=panels)
+
+
+@router.post("/export", response_model=ExportResponse)
+async def export_comic(req: ExportRequest) -> ExportResponse:
+    """Render the chosen printable 16:9 template (strip / zine) and return its URL."""
+    comic = COMICS.get(req.comic_id)
+    if comic is None:
+        raise HTTPException(status_code=404, detail="Unknown comic — generate one first.")
+
+    template = req.template if req.template in ("strip", "zine") else "strip"
+    fmt = req.format if req.format in ("pdf", "png") else "pdf"
+    filename = f"{template}.{fmt}"
+    out_path = os.path.join(comic["dir"], filename)
+
+    layout.build_print_template(comic["panel_paths"], req.captions, template, out_path, fmt)
+    comic_id = req.comic_id
+    return ExportResponse(url=f"/static/generated/comics/{comic_id}/{filename}")

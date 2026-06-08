@@ -29,7 +29,7 @@ export default function FlaneurPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [comic, setComic] = useState(null)
-  const wp = useMapWaypoints(10)
+  const wp = useMapWaypoints(8)
 
   async function handleGenerate({ file, description }) {
     setLoading(true)
@@ -103,6 +103,15 @@ export default function FlaneurPage() {
     setStep(1)
   }
 
+  // Return to the upload screen (Step 1) to swap the pet, keeping the route.
+  function backToUpload() {
+    setVariants([])
+    setSelectedIds([])
+    setPet(null)
+    setError('')
+    setStep(1)
+  }
+
   const goToStep = (n) => n <= step && setStep(n)
 
   return (
@@ -156,6 +165,17 @@ export default function FlaneurPage() {
 
         {/* ---- Step body ---- */}
         <div className="mt-10">
+          {/* Back affordance for the later steps (the stepper also navigates). */}
+          {step > 1 && (
+            <button
+              type="button"
+              onClick={() => goToStep(step - 1)}
+              className="spring mb-5 font-display text-sm font-extrabold text-white/70 hover:text-white"
+            >
+              ← Back
+            </button>
+          )}
+
           {step === 1 &&
             (variants.length === 0 ? (
               <PetUploader onSubmit={handleGenerate} loading={loading} />
@@ -166,12 +186,13 @@ export default function FlaneurPage() {
                 onToggle={toggleVariant}
                 onRegenerate={handleRegenerate}
                 onContinue={() => setStep(2)}
+                onBack={backToUpload}
               />
             ))}
 
           {step === 2 && (
             <div className="grid gap-5 lg:grid-cols-3">
-              <div className="comic-frame h-[420px] overflow-hidden lg:col-span-2 lg:h-[560px]">
+              <div className="pv-frame h-[420px] overflow-hidden lg:col-span-2 lg:h-[560px]">
                 <MapWithWaypoints
                   waypoints={wp.waypoints}
                   onAdd={wp.add}

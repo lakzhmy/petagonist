@@ -2,91 +2,151 @@ import { useState } from 'react'
 import Button from '../ui/Button'
 import Tag from '../ui/Tag'
 import Sparkle from '../ui/Sparkle'
-import PawIcon from '../ui/PawIcon'
 import PanelView from './PanelView'
+import { exportComic } from '../../lib/api'
+
+// Brand colours for blank cells — mirrors backend layout.BLANK_COLORS so the
+// on-screen preview matches the printed page.
+const BLANK_COLORS = [
+  '#FF5C35', '#4A2FBD', '#FF69B4', '#7ED957',
+  '#5EC5FF', '#FFD700', '#9C8CF5', '#FF8FAB',
+]
+const SLOTS = 8 // both templates always lay out 8 cells
 
 /**
- * ComicStrip — the finished output. Toggle horizontal strip vs vertical zine,
- * paw-print connectors between panels, and download as PNG or PDF.
+ * ComicStrip — the finished output. Panels land in a 3-column grid; any unused
+ * slots (fewer than 8 stops) become editable colour cells. Strip vs Zine is
+ * chosen only at download, where it renders a printable 16:9 page.
  */
 export default function ComicStrip({ comic, onRestart }) {
-  const [vertical, setVertical] = useState(false)
   const panels = comic?.panels ?? []
+  const n = panels.length
+  const [captions, setCaptions] = useState({}) // { slotIndex: text } for blanks
+  const [format, setFormat] = useState('pdf')
+  const [busy, setBusy] = useState('') // 'strip' | 'zine' while exporting
+  const [error, setError] = useState('')
+
+  function setCaption(i, text) {
+    setCaptions((c) => ({ ...c, [i]: text }))
+  }
+
+  async function download(template) {
+    setBusy(template)
+    setError('')
+    try {
+      const { url } = await exportComic({
+        comic_id: comic.comic_id,
+        template,
+        format,
+        captions,
+      })
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `petventures-${template}.${format}`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    } catch (e) {
+      setError(e.message || 'Could not build that template.')
+    } finally {
+      setBusy('')
+    }
+  }
 
   return (
     <div>
-      {/* Header / controls */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <Tag tone="sun" icon={<Sparkle size={14} twinkle />}>
-            Your comic is ready!
-          </Tag>
-          <h2 className="mt-2 font-display text-3xl font-black text-white">
-            A {panels.length}-panel adventure 🎉
-          </h2>
-        </div>
+      {/* Header */}
+      <div className="mb-6 text-center">
+        <Tag tone="sun" icon={<Sparkle size={14} twinkle />}>
+          Your comic is ready!
+        </Tag>
+        <h2 className="mt-2 font-display text-3xl font-black text-white">
+          A {n}-stop adventure 🎉
+        </h2>
+        {n < SLOTS && (
+          <p className="mt-2 text-sm text-white/70">
+            {SLOTS - n} blank {SLOTS - n === 1 ? 'cell' : 'cells'} below — add a
+            note to any of them, or leave them as colour blocks.
+          </p>
+        )}
+      </div>
 
+      {/* 3-column grid of 8 slots */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+        {Array.from({ length: SLOTS }).map((_, i) =>
+          i < n ? (
+            <PanelView key={panels[i].order} panel={panels[i]} index={i} />
+          ) : (
+            <BlankCell
+              key={`blank-${i}`}
+              color={BLANK_COLORS[i % BLANK_COLORS.length]}
+              value={captions[i] ?? ''}
+              onChange={(t) => setCaption(i, t)}
+            />
+          )
+        )}
+      </div>
+
+      {error && (
+        <p className="mt-6 text-center font-display font-bold text-sun">{error}</p>
+      )}
+
+      {/* Download controls — pick a layout to download */}
+      <div className="mt-10 flex flex-col items-center gap-4">
+        <p className="font-display text-sm font-extrabold text-white/70">
+          Download as a printable page (16:9)
+        </p>
+
+        {/* Format toggle */}
         <div className="flex items-center gap-1 rounded-full bg-white/10 p-1">
-          <button
-            onClick={() => setVertical(false)}
-            className={`spring rounded-full px-4 py-2 font-display text-sm font-extrabold ${
-              !vertical ? 'bg-sun text-ink' : 'text-white/70 hover:text-white'
-            }`}
-          >
-            ↔ Strip
-          </button>
-          <button
-            onClick={() => setVertical(true)}
-            className={`spring rounded-full px-4 py-2 font-display text-sm font-extrabold ${
-              vertical ? 'bg-sun text-ink' : 'text-white/70 hover:text-white'
-            }`}
-          >
-            ↕ Zine
-          </button>
+          {['pdf', 'png'].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFormat(f)}
+              className={`spring rounded-full px-4 py-1.5 font-display text-sm font-extrabold uppercase ${
+                format === f ? 'bg-sun text-ink' : 'text-white/70 hover:text-white'
+              }`}
+            >
+              {f}
+            </button>
+          ))}
         </div>
-      </div>
 
-      {/* Panels */}
-      <div
-        className={
-          vertical
-            ? 'flex flex-col items-center gap-3'
-            : 'flex items-start gap-3 overflow-x-auto pb-4'
-        }
-      >
-        {panels.map((p, i) => (
-          <div
-            key={p.order}
-            className={vertical ? 'flex flex-col items-center gap-3' : 'flex items-center gap-3'}
-          >
-            <PanelView panel={p} index={i} vertical={vertical} />
-            {i < panels.length - 1 && (
-              <PawIcon
-                size={26}
-                color="var(--color-sun)"
-                className={`shrink-0 opacity-80 ${vertical ? 'rotate-90' : ''}`}
-              />
-            )}
-          </div>
-        ))}
+        {/* Template buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button variant="tang" size="lg" disabled={!!busy} onClick={() => download('strip')}>
+            {busy === 'strip' ? 'Building…' : '↔ Strip'}
+          </Button>
+          <Button variant="grape" size="lg" disabled={!!busy} onClick={() => download('zine')}>
+            {busy === 'zine' ? 'Building…' : '📖 Zine (fold-up)'}
+          </Button>
+          <Button variant="ghost" size="lg" onClick={onRestart}>
+            ↻ Make another
+          </Button>
+        </div>
+        <p className="max-w-md text-center text-xs text-white/50">
+          <strong>Strip</strong> reads left-to-right across two rows.{' '}
+          <strong>Zine</strong> prints as an 8-page booklet — fold and cut along
+          the guides (its top row prints upside-down on purpose).
+        </p>
       </div>
+    </div>
+  )
+}
 
-      {/* Downloads + restart */}
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-        {comic?.strip_url && (
-          <Button as="a" href={comic.strip_url} download variant="tang" size="lg">
-            ⬇ Download PNG
-          </Button>
-        )}
-        {comic?.pdf_url && (
-          <Button as="a" href={comic.pdf_url} download variant="grape" size="lg">
-            ⬇ Download PDF
-          </Button>
-        )}
-        <Button variant="ghost" size="lg" onClick={onRestart}>
-          ↻ Make another
-        </Button>
-      </div>
+function BlankCell({ color, value, onChange }) {
+  return (
+    <div
+      className="pv-frame flex aspect-[3/2] items-center justify-center p-3"
+      style={{ backgroundColor: color }}
+    >
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Add a note…"
+        rows={2}
+        className="w-full resize-none bg-transparent text-center font-display text-lg font-black text-white placeholder:text-white/60 focus:outline-none"
+      />
     </div>
   )
 }

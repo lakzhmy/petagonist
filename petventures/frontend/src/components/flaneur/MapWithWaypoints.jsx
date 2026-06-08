@@ -159,7 +159,7 @@ export default function MapWithWaypoints({ waypoints, onAdd, onRemove, atMax }) 
         <button
           type="button"
           onClick={() => fitTo(stateRef.current.waypoints)}
-          className="spring absolute bottom-3 left-3 z-10 rounded-full border-2 border-ink bg-white px-4 py-2 font-display text-sm font-extrabold text-ink shadow-[3px_3px_0_0_var(--color-ink)] hover:-translate-y-0.5"
+          className="spring absolute bottom-3 left-3 z-10 rounded-full border-2 border-grape-light bg-white px-4 py-2 font-display text-sm font-extrabold text-grape shadow-[var(--shadow-lift)] hover:-translate-y-0.5"
         >
           ⤢ Fit route
         </button>
