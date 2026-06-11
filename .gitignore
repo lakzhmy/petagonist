@@ -18,3 +18,5 @@ dist/
 # Generated + uploaded media (runtime artifacts)
 petagonist/backend/static/uploads/
 petagonist/backend/static/generated/
+
+*.md

@@ -1,0 +1,570 @@
+{
+  "1097": {
+    "inputs": {
+      "image": "File.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "1098": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "upscale_method": "nearest-exact",
+      "keep_proportion": "pad",
+      "pad_color": "0, 0, 0",
+      "crop_position": "bottom",
+      "divisible_by": 2,
+      "device": "cpu",
+      "image": [
+        "1097",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "1102": {
+    "inputs": {
+      "filename_prefix": "2026-06-10/20260610_124655_output",
+      "images": [
+        "1101:745",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "1153": {
+    "inputs": {
+      "prepend_text": "PETAGONIST.2, comic style, small black dot eyes, one line eyebrows, simplified details, paper texture, bright colors, pet in photo ",
+      "multiline_text": "strolling down a cobblestone street, mid-step, tail held high\npausing at a crosswalk, looking both ways\npeeking around the corner of a narrow alley\ntrotting past a row of café tables on the sidewalk\nsitting beneath a wrought-iron lamppost, gazing up\nwatching a yellow tram rattle past\non hind legs sniffing a bright flower\ncurled up on a shady park bench\ntrotting along a tree-lined gravel path\npouncing after a fallen leaf\nlapping from a stone park fountain\nears alert beside a flowerbed\ngazing over the water from a promenade railing\nat the harbor's edge watching the boats\ntrotting across an arched bridge\nears flapping in the sea breeze on the waterfront\npeering curiously down at the rippling water\nwatching gulls wheel over the marina\nalert as pigeons scatter across the plaza\nsitting proud in the middle of a sunny square\nwatching a street musician in the plaza\nweaving between market stalls in the square\nmid-chase after pigeons across the open plaza\nresting by a grand plaza fountain\nlooking up in awe at a tall cathedral\npeeking out from a flower-filled balcony\nperched on a sunny rooftop over the city\nwaiting expectantly in an apartment doorway\ngazing up at an ornate Modernista façade\nposing beside a red mailbox outside a shop\nheroic little explorer pose, scarf fluttering\nsitting upright and dapper, head tilted, curious\ncaught mid-leap, full of energy\nglancing back over the shoulder with a confident grin",
+      "append_text": "",
+      "start_index": 4,
+      "max_rows": 1
+    },
+    "class_type": "CR Prompt List",
+    "_meta": {
+      "title": "📜 CR Prompt List"
+    }
+  },
+  "1154": {
+    "inputs": {
+      "output": "",
+      "source": [
+        "1153",
+        0
+      ]
+    },
+    "class_type": "Display Any (rgthree)",
+    "_meta": {
+      "title": "Display Any (rgthree)"
+    }
+  },
+  "1159": {
+    "inputs": {
+      "value": 137
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Int"
+    }
+  },
+  "1198": {
+    "inputs": {
+      "string_a": [
+        "1153",
+        0
+      ],
+      "string_b": "",
+      "delimiter": ", "
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "Concatenate"
+    }
+  },
+  "1101:741": {
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "1101:742": {
+    "inputs": {
+      "steps": [
+        "1101:755",
+        0
+      ],
+      "width": [
+        "1101:756",
+        0
+      ],
+      "height": [
+        "1101:757",
+        0
+      ]
+    },
+    "class_type": "Flux2Scheduler",
+    "_meta": {
+      "title": "Flux2Scheduler"
+    }
+  },
+  "1101:743": {
+    "inputs": {
+      "cfg": [
+        "1101:764",
+        0
+      ],
+      "model": [
+        "1101:766",
+        0
+      ],
+      "positive": [
+        "1101:753:769",
+        0
+      ],
+      "negative": [
+        "1101:753:767",
+        0
+      ]
+    },
+    "class_type": "CFGGuider",
+    "_meta": {
+      "title": "CFGGuider"
+    }
+  },
+  "1101:744": {
+    "inputs": {
+      "noise": [
+        "1101:746",
+        0
+      ],
+      "guider": [
+        "1101:743",
+        0
+      ],
+      "sampler": [
+        "1101:741",
+        0
+      ],
+      "sigmas": [
+        "1101:742",
+        0
+      ],
+      "latent_image": [
+        "1101:751",
+        0
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "SamplerCustomAdvanced"
+    }
+  },
+  "1101:745": {
+    "inputs": {
+      "samples": [
+        "1101:744",
+        0
+      ],
+      "vae": [
+        "1101:750",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "1101:746": {
+    "inputs": {
+      "noise_seed": [
+        "1101:754",
+        0
+      ]
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "RandomNoise"
+    }
+  },
+  "1101:747": {
+    "inputs": {
+      "unet_name": "flux-2-klein-4b.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "1101:748": {
+    "inputs": {
+      "clip_name": "qwen_3_4b_fp8_mixed.safetensors",
+      "type": "flux2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "1101:749": {
+    "inputs": {
+      "text": [
+        "1101:761",
+        0
+      ],
+      "clip": [
+        "1101:766",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "1101:750": {
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "1101:751": {
+    "inputs": {
+      "width": [
+        "1101:756",
+        0
+      ],
+      "height": [
+        "1101:757",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyFlux2LatentImage",
+    "_meta": {
+      "title": "Empty Flux 2 Latent"
+    }
+  },
+  "1101:752": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "1098",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "ImageScaleToTotalPixels"
+    }
+  },
+  "1101:753:767": {
+    "inputs": {
+      "conditioning": [
+        "1101:763",
+        0
+      ],
+      "latent": [
+        "1101:753:768",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "ReferenceLatent"
+    }
+  },
+  "1101:753:768": {
+    "inputs": {
+      "pixels": [
+        "1101:752",
+        0
+      ],
+      "vae": [
+        "1101:750",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "1101:753:769": {
+    "inputs": {
+      "conditioning": [
+        "1101:749",
+        0
+      ],
+      "latent": [
+        "1101:753:768",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "ReferenceLatent"
+    }
+  },
+  "1101:754": {
+    "inputs": {
+      "value": [
+        "1159",
+        0
+      ]
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "seed"
+    }
+  },
+  "1101:755": {
+    "inputs": {
+      "value": 20
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "steps"
+    }
+  },
+  "1101:756": {
+    "inputs": {
+      "value": 1024
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "width"
+    }
+  },
+  "1101:757": {
+    "inputs": {
+      "value": 1024
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "height"
+    }
+  },
+  "1101:758": {
+    "inputs": {
+      "seed": [
+        "1101:754",
+        0
+      ],
+      "steps": [
+        "1101:755",
+        0
+      ],
+      "model": [
+        "1101:760",
+        0
+      ],
+      "author": [
+        "1101:759",
+        0
+      ],
+      "output_path": "[time(%Y-%m-%d)]",
+      "file_prefix": "[time(%Y%m%d_%H%M%S)]_param",
+      "wrap_width": 60,
+      "font_family": "Arial",
+      "font_size": 36,
+      "dark_mode": false,
+      "save_svg": true,
+      "save_yaml": false,
+      "prompt": [
+        "1101:761",
+        0
+      ],
+      "negative_prompt": "",
+      "additional_text": [
+        "1101:854",
+        0
+      ]
+    },
+    "class_type": "SaveParamsSVG",
+    "_meta": {
+      "title": "Save Params as SVG"
+    }
+  },
+  "1101:759": {
+    "inputs": {
+      "value": "Lakzhmy"
+    },
+    "class_type": "PrimitiveString",
+    "_meta": {
+      "title": "author"
+    }
+  },
+  "1101:760": {
+    "inputs": {
+      "value": "FLUX.2 Image-to-Image"
+    },
+    "class_type": "PrimitiveString",
+    "_meta": {
+      "title": "model"
+    }
+  },
+  "1101:761": {
+    "inputs": {
+      "prompt": [
+        "1198",
+        0
+      ]
+    },
+    "class_type": "CR Prompt Text",
+    "_meta": {
+      "title": "⚙️ CR Prompt Text"
+    }
+  },
+  "1101:762": {
+    "inputs": {
+      "image": [
+        "1101:752",
+        0
+      ]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "1101:763": {
+    "inputs": {
+      "text": [
+        "1101:765",
+        0
+      ],
+      "clip": [
+        "1101:766",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "1101:764": {
+    "inputs": {
+      "value": 2.5
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "cfg"
+    }
+  },
+  "1101:765": {
+    "inputs": {
+      "prompt": "prompt"
+    },
+    "class_type": "CR Prompt Text",
+    "_meta": {
+      "title": "⚙️ CR Prompt Text"
+    }
+  },
+  "1101:766": {
+    "inputs": {
+      "lora_name": "PETAGONIST.2_000002500.safetensors",
+      "strength_model": 2,
+      "strength_clip": 1,
+      "model": [
+        "1101:747",
+        0
+      ],
+      "clip": [
+        "1101:748",
+        0
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)"
+    }
+  },
+  "1101:847": {
+    "inputs": {
+      "prefix": "",
+      "suffix": "",
+      "input": "PETAGONIST.2_000002500.safetensors"
+    },
+    "class_type": "SomethingToString",
+    "_meta": {
+      "title": "Something To String"
+    }
+  },
+  "1101:848": {
+    "inputs": {
+      "prefix": "",
+      "suffix": "",
+      "input": 1
+    },
+    "class_type": "SomethingToString",
+    "_meta": {
+      "title": "Something To String"
+    }
+  },
+  "1101:849": {
+    "inputs": {
+      "string_a": [
+        "1101:847",
+        0
+      ],
+      "string_b": [
+        "1101:853",
+        0
+      ],
+      "delimiter": "_modelstrength-"
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "Concatenate"
+    }
+  },
+  "1101:853": {
+    "inputs": {
+      "prefix": "",
+      "suffix": "",
+      "input": 2
+    },
+    "class_type": "SomethingToString",
+    "_meta": {
+      "title": "Something To String"
+    }
+  },
+  "1101:854": {
+    "inputs": {
+      "string_a": [
+        "1101:849",
+        0
+      ],
+      "string_b": [
+        "1101:848",
+        0
+      ],
+      "delimiter": "_clipstrength-"
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "Concatenate"
+    }
+  }
+}
