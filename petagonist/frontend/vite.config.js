@@ -10,7 +10,17 @@ export default defineConfig({
     // Backend (FastAPI) will run on :8000 — proxy /api during dev so the
     // frontend can call relative URLs and avoid CORS headaches.
     proxy: {
-      '/api': 'http://localhost:8000',
+      '/api': {
+        target: 'http://localhost:8000',
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            if (proxyRes.headers['content-type']?.includes('text/event-stream')) {
+              proxyRes.headers['cache-control'] = 'no-cache'
+              proxyRes.headers['x-accel-buffering'] = 'no'
+            }
+          })
+        },
+      },
       '/static': 'http://localhost:8000',
     },
   },

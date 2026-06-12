@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import PageWrapper from '../components/layout/PageWrapper'
 import Tag from '../components/ui/Tag'
 import PetUploader from '../components/shared/PetUploader'
@@ -8,13 +8,8 @@ import MapWithWaypoints from '../components/flaneur/MapWithWaypoints'
 import WaypointList from '../components/flaneur/WaypointList'
 import ComicStrip from '../components/flaneur/ComicStrip'
 import { useMapWaypoints } from '../hooks/useMapWaypoints'
-import { uploadPet, generateVariants, generateComic } from '../lib/api'
+import { uploadPet, streamVariants, streamMoreVariants, regenerateVariant, generateComic } from '../lib/api'
 
-/**
- * FlaneurPage — the Petagonist experience and the app's home (root route).
- * The 3-step spine: Your Pet → The Route → The Comic.
- * Slice 2 wires Step 1 (upload + character gallery). Steps 2–3 are placeholders.
- */
 const STEPS = [
   { n: 1, title: 'Your Pet', tone: 'tang' },
   { n: 2, title: 'The Route', tone: 'bubble' },
@@ -23,42 +18,86 @@ const STEPS = [
 
 export default function FlaneurPage() {
   const [step, setStep] = useState(1)
-  const [pet, setPet] = useState(null) // { id, imageUrl, description }
+  const [pet, setPet] = useState(null)
   const [variants, setVariants] = useState([])
   const [selectedIds, setSelectedIds] = useState([])
   const [loading, setLoading] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [progress, setProgress] = useState(null)
   const [error, setError] = useState('')
   const [comic, setComic] = useState(null)
   const wp = useMapWaypoints(8)
+  const abortRef = useRef(null)
 
   async function handleGenerate({ file, description }) {
     setLoading(true)
     setError('')
     try {
       const up = await uploadPet(file, description)
-      const res = await generateVariants(up.pet_id)
-      setPet({ id: up.pet_id, imageUrl: up.image_url, description: up.description })
-      setVariants(res.variants)
+      const petData = { id: up.pet_id, imageUrl: up.image_url, description: up.description }
+      setPet(petData)
+      setVariants([])
       setSelectedIds([])
+      setLoading(false)
+      startStreaming(petData.id)
     } catch (e) {
       setError(e.message || 'Something went wrong generating characters.')
-    } finally {
       setLoading(false)
     }
   }
 
-  async function handleRegenerate() {
-    if (!pet) return
-    setLoading(true)
+  function startStreaming(petId, more = false) {
+    setGenerating(true)
+    setProgress(null)
     setError('')
+
+    if (abortRef.current) abortRef.current()
+
+    const streamFn = more ? streamMoreVariants : streamVariants
+    abortRef.current = streamFn(petId, {
+      onStart(total) {
+        setProgress({ done: 0, total })
+      },
+      onVariant(variant, index, total) {
+        setVariants((prev) => [...prev, variant])
+        setProgress({ done: index + 1, total })
+      },
+      onDone() {
+        setGenerating(false)
+        setProgress(null)
+        abortRef.current = null
+      },
+      onError(err) {
+        setError(err.message || 'Generation failed.')
+        setGenerating(false)
+        setProgress(null)
+        abortRef.current = null
+      },
+    })
+  }
+
+  function handleRegenerate() {
+    if (!pet || generating) return
+    setVariants([])
+    setSelectedIds([])
+    startStreaming(pet.id)
+  }
+
+  function handleGenerateMore() {
+    if (!pet || generating) return
+    startStreaming(pet.id, true)
+  }
+
+  async function handleRegenerateOne(variantId) {
+    if (!pet) return
     try {
-      const res = await generateVariants(pet.id)
-      setVariants(res.variants)
-      setSelectedIds([])
+      const res = await regenerateVariant(pet.id, variantId)
+      setVariants((prev) =>
+        prev.map((v) => (v.id === variantId ? res.variant : v))
+      )
+      setSelectedIds((prev) => prev.filter((id) => id !== variantId))
     } catch (e) {
-      setError(e.message || 'Could not regenerate characters.')
-    } finally {
-      setLoading(false)
+      setError(e.message || 'Could not regenerate that variant.')
     }
   }
 
@@ -94,6 +133,7 @@ export default function FlaneurPage() {
   }
 
   function handleRestart() {
+    if (abortRef.current) abortRef.current()
     setComic(null)
     setVariants([])
     setSelectedIds([])
@@ -103,8 +143,8 @@ export default function FlaneurPage() {
     setStep(1)
   }
 
-  // Return to the upload screen (Step 1) to swap the pet, keeping the route.
   function backToUpload() {
+    if (abortRef.current) abortRef.current()
     setVariants([])
     setSelectedIds([])
     setPet(null)
@@ -165,7 +205,6 @@ export default function FlaneurPage() {
 
         {/* ---- Step body ---- */}
         <div className="mt-10">
-          {/* Back affordance for the later steps (the stepper also navigates). */}
           {step > 1 && (
             <button
               type="button"
@@ -177,7 +216,7 @@ export default function FlaneurPage() {
           )}
 
           {step === 1 &&
-            (variants.length === 0 ? (
+            (variants.length === 0 && !generating ? (
               <PetUploader onSubmit={handleGenerate} loading={loading} />
             ) : (
               <PetGallery
@@ -185,8 +224,11 @@ export default function FlaneurPage() {
                 selectedIds={selectedIds}
                 onToggle={toggleVariant}
                 onRegenerate={handleRegenerate}
+                onRegenerateOne={handleRegenerateOne}
                 onContinue={() => setStep(2)}
                 onBack={backToUpload}
+                generating={generating}
+                progress={progress}
               />
             ))}
 

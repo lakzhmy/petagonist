@@ -465,7 +465,7 @@
   },
   "1101:764": {
     "inputs": {
-      "value": 2.5
+      "value": 3.5
     },
     "class_type": "PrimitiveFloat",
     "_meta": {
@@ -474,7 +474,7 @@
   },
   "1101:765": {
     "inputs": {
-      "prompt": "text, words, letters, writing, watermark, signature, logo, title, caption, label, bipedal, two legs, anthropomorphic, humanoid, standing upright on two legs, hands, fingers, human body"
+      "prompt": "text, words, letters, writing, watermark, signature, logo, title, caption, label, banner, typographic, bipedal, two legs, anthropomorphic, humanoid, standing upright on two legs, hands, fingers, human body, multiple heads, two heads, extra head, multiple tails, extra limbs, extra legs, deformed, mutated, disfigured, fused"
     },
     "class_type": "CR Prompt Text",
     "_meta": {

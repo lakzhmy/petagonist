@@ -38,7 +38,7 @@ export default function LoadingOverlay({ show, messages = MESSAGES }) {
         <p className="mt-7 font-display text-2xl font-black text-white" key={i}>
           {messages[i]}
         </p>
-        <p className="mt-2 text-white/60">This is a stub — real magic comes later ✨</p>
+        <p className="mt-2 text-white/60">Hang tight — real magic in progress</p>
       </div>
     </div>
   )

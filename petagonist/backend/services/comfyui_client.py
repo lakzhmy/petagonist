@@ -104,7 +104,62 @@ class ComfyUIClient:
         with open(save_path, "wb") as f:
             f.write(r.content)
 
-    # -- Seam 1: pet → character variants ------------------------------------
+    def prepare_comfyui(self, image_path: str | None) -> str | None:
+        """Upload the pet image once. Returns ComfyUI filename, or None on failure."""
+        if image_path is None:
+            return None
+        if not self._is_available():
+            log.warning("ComfyUI not reachable at %s", COMFYUI_URL)
+            return None
+        try:
+            return self._upload_image(image_path)
+        except Exception:
+            log.exception("Failed to upload image to ComfyUI")
+            return None
+
+    # -- Seam 1: single variant generation ------------------------------------
+
+    def generate_single_variant(
+        self,
+        image_path: str | None,
+        description: str,
+        pose: str,
+        pet_id: str,
+        index: int = 0,
+        comfy_filename: str | None = None,
+    ) -> dict:
+        """Generate one variant. Falls back to placeholder on any failure."""
+        variant_id = uuid.uuid4().hex[:8]
+        filename = f"variant_{index:02d}_{variant_id}.png"
+        out_dir = os.path.join(self.generated_root, pet_id)
+        out_path = os.path.join(out_dir, filename)
+
+        if comfy_filename:
+            try:
+                wf = copy.deepcopy(_BASE_WORKFLOW)
+                wf["1097"]["inputs"]["image"] = comfy_filename
+                desc_part = f"{description}, " if description else ""
+                wf["1198"]["inputs"]["string_a"] = STYLE_PREFIX + desc_part + pose
+                wf["1159"]["inputs"]["value"] = (hash(pet_id) + index) % (2**31)
+                wf["1102"]["inputs"]["filename_prefix"] = (
+                    f"petagonist/{pet_id}/variant_{index:02d}"
+                )
+                history = self._submit_and_wait(wf)
+                images = history["outputs"]["1102"]["images"]
+                self._download_output(images[0], out_path)
+                log.info("Variant %d done: %s", index, pose[:40])
+            except Exception:
+                log.exception("ComfyUI failed for variant %d — placeholder fallback", index)
+                generate_variant_card(image_path, pose, out_path, index=index)
+        else:
+            generate_variant_card(image_path, pose, out_path, index=index)
+
+        return {
+            "id": variant_id,
+            "image_url": f"/static/generated/{pet_id}/{filename}",
+            "pose_prompt": pose,
+            "path": out_path,
+        }
 
     def generate_pet_variants(
         self,
@@ -113,73 +168,14 @@ class ComfyUIClient:
         pose_prompts: list[str],
         pet_id: str,
     ) -> list[dict]:
-        if image_path is None:
-            log.info("No pet photo — using placeholders")
-            return self._placeholder_variants(image_path, pose_prompts, pet_id)
-
-        if not self._is_available():
-            log.warning("ComfyUI not reachable at %s — using placeholders", COMFYUI_URL)
-            return self._placeholder_variants(image_path, pose_prompts, pet_id)
-
-        try:
-            comfy_filename = self._upload_image(image_path)
-        except Exception:
-            log.exception("Failed to upload image to ComfyUI")
-            return self._placeholder_variants(image_path, pose_prompts, pet_id)
-
-        out_dir = os.path.join(self.generated_root, pet_id)
-        variants: list[dict] = []
-
-        for i, pose in enumerate(pose_prompts):
-            variant_id = uuid.uuid4().hex[:8]
-            filename = f"variant_{i:02d}_{variant_id}.png"
-            out_path = os.path.join(out_dir, filename)
-
-            try:
-                wf = copy.deepcopy(_BASE_WORKFLOW)
-                wf["1097"]["inputs"]["image"] = comfy_filename
-                wf["1198"]["inputs"]["string_a"] = STYLE_PREFIX + pose
-                wf["1159"]["inputs"]["value"] = (hash(pet_id) + i) % (2**31)
-                wf["1102"]["inputs"]["filename_prefix"] = f"petagonist/{pet_id}/variant_{i:02d}"
-
-                history = self._submit_and_wait(wf)
-                images = history["outputs"]["1102"]["images"]
-                self._download_output(images[0], out_path)
-                log.info("Variant %d/%d done: %s", i + 1, len(pose_prompts), pose[:40])
-            except Exception:
-                log.exception("ComfyUI failed for variant %d — falling back to placeholder", i)
-                generate_variant_card(image_path, pose, out_path, index=i)
-
-            variants.append(
-                {
-                    "id": variant_id,
-                    "image_url": f"/static/generated/{pet_id}/{filename}",
-                    "pose_prompt": pose,
-                    "path": out_path,
-                }
+        """Batch helper — generates all variants sequentially."""
+        comfy_filename = self.prepare_comfyui(image_path)
+        return [
+            self.generate_single_variant(
+                image_path, description, pose, pet_id, i, comfy_filename
             )
-
-        return variants
-
-    def _placeholder_variants(
-        self, image_path: str | None, pose_prompts: list[str], pet_id: str
-    ) -> list[dict]:
-        out_dir = os.path.join(self.generated_root, pet_id)
-        variants: list[dict] = []
-        for i, pose in enumerate(pose_prompts):
-            variant_id = uuid.uuid4().hex[:8]
-            filename = f"variant_{i:02d}_{variant_id}.png"
-            out_path = os.path.join(out_dir, filename)
-            generate_variant_card(image_path, pose, out_path, index=i)
-            variants.append(
-                {
-                    "id": variant_id,
-                    "image_url": f"/static/generated/{pet_id}/{filename}",
-                    "pose_prompt": pose,
-                    "path": out_path,
-                }
-            )
-        return variants
+            for i, pose in enumerate(pose_prompts)
+        ]
 
     # -- Seam 2: scene styling (still stubbed) --------------------------------
 
@@ -189,6 +185,6 @@ class ComfyUIClient:
     # -- Seam 3: compositing (still stubbed) ----------------------------------
 
     def composite_pet_into_scene(
-        self, scene_path: str, pet_path: str, position: tuple[int, int] | None = None
+        self, scene_path: str, pet_path: str, position: tuple[int, int] | None = None,
     ) -> str:
         return scene_path
