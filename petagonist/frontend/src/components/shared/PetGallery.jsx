@@ -94,7 +94,7 @@ export default function PetGallery({
         <Button
           variant="lime"
           size="lg"
-          disabled={selected.size === 0 || generating}
+          disabled={selected.size === 0}
           onClick={onContinue}
         >
           Continue to the route →

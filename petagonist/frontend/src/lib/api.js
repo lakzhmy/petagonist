@@ -82,6 +82,51 @@ export function streamVariants(petId, { onStart, onVariant, onDone, onError }) {
 }
 
 /**
+ * Stream additional variants (appended to existing). Same SSE pattern as streamVariants.
+ */
+export function streamMoreVariants(petId, { onStart, onVariant, onDone, onError }) {
+  const ctrl = new AbortController()
+
+  fetch(`/api/pet/${petId}/generate-more-stream`, {
+    method: 'POST',
+    signal: ctrl.signal,
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || `Request failed (${res.status})`)
+      }
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          const msg = JSON.parse(line.slice(6))
+
+          if (msg.type === 'start') onStart?.(msg.total)
+          else if (msg.type === 'variant') onVariant?.(msg.variant, msg.index, msg.total)
+          else if (msg.type === 'done') onDone?.()
+        }
+      }
+    })
+    .catch((err) => {
+      if (err.name !== 'AbortError') onError?.(err)
+    })
+
+  return () => ctrl.abort()
+}
+
+/**
  * Regenerate a single variant. Returns { variant }.
  */
 export async function regenerateVariant(petId, oldVariantId, posePrompt = '') {
@@ -103,6 +148,54 @@ export async function generateComic(payload) {
     body: JSON.stringify(payload),
   })
   return handle(res)
+}
+
+/**
+ * Stream comic panel generation via SSE. Calls onPanel(panel, index, total)
+ * for each panel as it finishes. Returns an abort function.
+ */
+export function streamComic(payload, { onStart, onPanel, onDone, onError }) {
+  const ctrl = new AbortController()
+
+  fetch('/api/flaneur/generate-stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: ctrl.signal,
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || `Request failed (${res.status})`)
+      }
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          const msg = JSON.parse(line.slice(6))
+
+          if (msg.type === 'start') onStart?.(msg.comic_id, msg.total)
+          else if (msg.type === 'panel') onPanel?.(msg.panel, msg.index, msg.total)
+          else if (msg.type === 'done') onDone?.()
+        }
+      }
+    })
+    .catch((err) => {
+      if (err.name !== 'AbortError') onError?.(err)
+    })
+
+  return () => ctrl.abort()
 }
 
 /**

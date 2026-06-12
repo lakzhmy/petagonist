@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Button from '../ui/Button'
 import Tag from '../ui/Tag'
 import Sparkle from '../ui/Sparkle'
@@ -18,8 +18,13 @@ const SLOTS = 8 // both templates always lay out 8 cells
  * slots (fewer than 8 stops) become editable colour cells. Strip vs Zine is
  * chosen only at download, where it renders a printable 16:9 page.
  */
-export default function ComicStrip({ comic, onRestart }) {
+export default function ComicStrip({ comic, onRestart, generating, progress }) {
   const [panels, setPanels] = useState(comic?.panels ?? [])
+
+  useEffect(() => {
+    if (comic?.panels) setPanels(comic.panels)
+  }, [comic?.panels?.length])
+
   const n = panels.length
   const [captions, setCaptions] = useState({}) // { slotIndex: text } for blanks
   const [format, setFormat] = useState('pdf')
@@ -72,12 +77,14 @@ export default function ComicStrip({ comic, onRestart }) {
       {/* Header */}
       <div className="mb-6 text-center">
         <Tag tone="sun" icon={<Sparkle size={14} twinkle />}>
-          Your comic is ready!
+          {generating ? 'Drawing your comic…' : 'Your comic is ready!'}
         </Tag>
         <h2 className="mt-2 font-display text-3xl font-black text-white">
-          A {n}-stop adventure 🎉
+          {generating
+            ? `Drawing panel ${progress ? progress.done : 0} of ${progress ? progress.total : '…'}`
+            : `A ${n}-stop adventure`}
         </h2>
-        {n < SLOTS && (
+        {!generating && n < SLOTS && (
           <p className="mt-2 text-sm text-white/70">
             {SLOTS - n} blank {SLOTS - n === 1 ? 'cell' : 'cells'} below — add a
             note to any of them, or leave them as colour blocks.
@@ -87,24 +94,45 @@ export default function ComicStrip({ comic, onRestart }) {
 
       {/* 3-column grid of 8 slots */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        {Array.from({ length: SLOTS }).map((_, i) =>
-          i < n ? (
-            <PanelView
-              key={panels[i].order}
-              panel={panels[i]}
-              index={i}
-              onRegenerate={() => regenerate(panels[i].order)}
-              rolling={!!rolling[panels[i].order]}
-            />
-          ) : (
-            <BlankCell
-              key={`blank-${i}`}
-              color={BLANK_COLORS[i % BLANK_COLORS.length]}
-              value={captions[i] ?? ''}
-              onChange={(t) => setCaption(i, t)}
-            />
-          )
-        )}
+        {Array.from({ length: SLOTS }).map((_, i) => {
+          if (i < n) {
+            return (
+              <PanelView
+                key={panels[i].order}
+                panel={panels[i]}
+                index={i}
+                onRegenerate={() => regenerate(panels[i].order)}
+                rolling={!!rolling[panels[i].order]}
+              />
+            )
+          }
+          if (generating && i === n) {
+            return (
+              <div
+                key="drawing-next"
+                className="pv-frame flex aspect-[3/2] items-center justify-center bg-white/5"
+              >
+                <div className="text-center">
+                  <span className="inline-block animate-bob text-4xl">🎨</span>
+                  <p className="mt-2 px-3 font-display text-xs font-bold text-white/60">
+                    Drawing…
+                  </p>
+                </div>
+              </div>
+            )
+          }
+          if (!generating) {
+            return (
+              <BlankCell
+                key={`blank-${i}`}
+                color={BLANK_COLORS[i % BLANK_COLORS.length]}
+                value={captions[i] ?? ''}
+                onChange={(t) => setCaption(i, t)}
+              />
+            )
+          }
+          return null
+        })}
       </div>
 
       {error && (
@@ -134,10 +162,10 @@ export default function ComicStrip({ comic, onRestart }) {
 
         {/* Template buttons */}
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Button variant="tang" size="lg" disabled={!!busy} onClick={() => download('strip')}>
+          <Button variant="tang" size="lg" disabled={!!busy || generating} onClick={() => download('strip')}>
             {busy === 'strip' ? 'Building…' : '↔ Strip'}
           </Button>
-          <Button variant="grape" size="lg" disabled={!!busy} onClick={() => download('zine')}>
+          <Button variant="grape" size="lg" disabled={!!busy || generating} onClick={() => download('zine')}>
             {busy === 'zine' ? 'Building…' : '📖 Zine (fold-up)'}
           </Button>
           <Button variant="ghost" size="lg" onClick={onRestart}>

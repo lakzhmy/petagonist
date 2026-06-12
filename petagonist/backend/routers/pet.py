@@ -31,7 +31,8 @@ PETS: dict[str, dict] = {}
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
 EXT_BY_TYPE = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
 
-VARIANT_COUNT = 6
+VARIANT_COUNT = 8
+MORE_COUNT = 2
 
 
 @router.post("/upload", response_model=PetUploadResponse)
@@ -108,6 +109,49 @@ async def generate_variants_stream(pet_id: str):
         raise HTTPException(status_code=404, detail="Unknown pet — upload first.")
 
     poses = random.sample(POSE_PROMPTS, VARIANT_COUNT)
+    comfy_filename = comfy.prepare_comfyui(pet["image_path"])
+
+    def event_stream():
+        total = len(poses)
+        yield f"data: {json.dumps({'type': 'start', 'total': total})}\n\n"
+
+        for i, pose in enumerate(poses):
+            idx = pet.get("next_index", 0) + i
+            v = comfy.generate_single_variant(
+                image_path=pet["image_path"],
+                description=pet["description"],
+                pose=pose,
+                pet_id=pet_id,
+                index=idx,
+                comfy_filename=comfy_filename,
+            )
+            pet["variants"][v["id"]] = v
+            variant_data = {
+                "type": "variant",
+                "index": i,
+                "total": total,
+                "variant": {"id": v["id"], "image_url": v["image_url"], "pose_prompt": v["pose_prompt"]},
+            }
+            yield f"data: {json.dumps(variant_data)}\n\n"
+
+        pet["next_index"] = pet.get("next_index", 0) + total
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@router.post("/{pet_id}/generate-more-stream")
+async def generate_more_stream(pet_id: str):
+    """SSE endpoint — streams a few additional variants, appending to existing."""
+    pet = PETS.get(pet_id)
+    if pet is None:
+        raise HTTPException(status_code=404, detail="Unknown pet — upload first.")
+
+    used_poses = {v["pose_prompt"] for v in pet.get("variants", {}).values()}
+    available = [p for p in POSE_PROMPTS if p not in used_poses]
+    if len(available) < MORE_COUNT:
+        available = POSE_PROMPTS
+    poses = random.sample(available, min(MORE_COUNT, len(available)))
     comfy_filename = comfy.prepare_comfyui(pet["image_path"])
 
     def event_stream():

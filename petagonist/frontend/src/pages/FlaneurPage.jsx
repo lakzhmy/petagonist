@@ -8,7 +8,7 @@ import MapWithWaypoints from '../components/flaneur/MapWithWaypoints'
 import WaypointList from '../components/flaneur/WaypointList'
 import ComicStrip from '../components/flaneur/ComicStrip'
 import { useMapWaypoints } from '../hooks/useMapWaypoints'
-import { uploadPet, streamVariants, streamMoreVariants, regenerateVariant, generateComic } from '../lib/api'
+import { uploadPet, streamVariants, streamMoreVariants, regenerateVariant, streamComic } from '../lib/api'
 
 const STEPS = [
   { n: 1, title: 'Your Pet', tone: 'tang' },
@@ -26,8 +26,11 @@ export default function FlaneurPage() {
   const [progress, setProgress] = useState(null)
   const [error, setError] = useState('')
   const [comic, setComic] = useState(null)
+  const [comicProgress, setComicProgress] = useState(null)
+  const [generatingComic, setGeneratingComic] = useState(false)
   const wp = useMapWaypoints(8)
   const abortRef = useRef(null)
+  const comicAbortRef = useRef(null)
 
   async function handleGenerate({ file, description }) {
     setLoading(true)
@@ -107,34 +110,59 @@ export default function FlaneurPage() {
     )
   }
 
-  async function handleGenerateComic() {
+  function handleGenerateComic() {
     setStep(3)
     setComic(null)
-    setLoading(true)
     setError('')
-    try {
-      const res = await generateComic({
-        pet_id: pet.id,
-        selected_variant_ids: selectedIds,
-        waypoints: wp.waypoints.map((w, i) => ({
-          lat: w.lat,
-          lng: w.lng,
-          order: i,
-          type: w.type,
-          name: w.name,
-        })),
-      })
-      setComic(res)
-    } catch (e) {
-      setError(e.message || 'Could not generate the comic.')
-    } finally {
-      setLoading(false)
+    setGeneratingComic(true)
+    setComicProgress(null)
+
+    if (comicAbortRef.current) comicAbortRef.current()
+
+    const payload = {
+      pet_id: pet.id,
+      selected_variant_ids: selectedIds,
+      waypoints: wp.waypoints.map((w, i) => ({
+        lat: w.lat,
+        lng: w.lng,
+        order: i,
+        type: w.type,
+        name: w.name,
+      })),
     }
+
+    comicAbortRef.current = streamComic(payload, {
+      onStart(comicId, total) {
+        setComic({ comic_id: comicId, panels: [] })
+        setComicProgress({ done: 0, total })
+      },
+      onPanel(panel, index, total) {
+        setComic((prev) => ({
+          ...prev,
+          panels: [...(prev?.panels ?? []), panel],
+        }))
+        setComicProgress({ done: index + 1, total })
+      },
+      onDone() {
+        setGeneratingComic(false)
+        setComicProgress(null)
+        comicAbortRef.current = null
+      },
+      onError(err) {
+        setError(err.message || 'Could not generate the comic.')
+        setGeneratingComic(false)
+        setComicProgress(null)
+        comicAbortRef.current = null
+      },
+    })
   }
 
   function handleRestart() {
     if (abortRef.current) abortRef.current()
+    if (comicAbortRef.current) comicAbortRef.current()
     setComic(null)
+    setGeneratingComic(false)
+    setComicProgress(null)
     setVariants([])
     setSelectedIds([])
     setPet(null)
@@ -225,7 +253,16 @@ export default function FlaneurPage() {
                 onToggle={toggleVariant}
                 onRegenerate={handleRegenerate}
                 onRegenerateOne={handleRegenerateOne}
-                onContinue={() => setStep(2)}
+                onGenerateMore={handleGenerateMore}
+                onContinue={() => {
+                  if (abortRef.current) {
+                    abortRef.current()
+                    abortRef.current = null
+                    setGenerating(false)
+                    setProgress(null)
+                  }
+                  setStep(2)
+                }}
                 onBack={backToUpload}
                 generating={generating}
                 progress={progress}
@@ -255,13 +292,18 @@ export default function FlaneurPage() {
           )}
           {step === 3 &&
             (comic ? (
-              <ComicStrip comic={comic} onRestart={handleRestart} />
+              <ComicStrip
+                comic={comic}
+                onRestart={handleRestart}
+                generating={generatingComic}
+                progress={comicProgress}
+              />
             ) : (
               !error && (
                 <div className="rounded-[var(--radius-card)] border-2 border-dashed border-white/30 bg-white/5 p-14 text-center">
                   <span className="animate-bob inline-block text-6xl">📖</span>
                   <p className="mt-4 font-display text-xl font-black text-white">
-                    Drawing your comic…
+                    Setting up your comic…
                   </p>
                 </div>
               )

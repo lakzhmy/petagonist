@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import os
 import uuid
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 from models.schemas import (
     ExportRequest,
@@ -81,16 +83,20 @@ def _build_panel(comic: dict, order: int, scene_idx: int) -> Panel:
     location = wp["name"] or f"Stop {order + 1}"
     suffix = f"{order:02d}_v{scene_idx}"
 
-    # 1) scene source (stub: seeded themed scene). Seed is unique per panel+roll.
+    # 1) scene source — Mapillary street photo (with drawn fallback).
     scene_path = os.path.join(comic["dir"], f"scene_{suffix}.png")
     seed = (order * 1000 + scene_idx) & 0xFFFF
     streetview.fetch_street_view(wp["lat"], wp["lng"], wp["type"], location, scene_path, seed=seed)
-    # 2) tintinify (stub: pass-through)
-    scene_path = comfy.tintinify_scene(scene_path)
-    # 3) composite the chosen character into the scene
-    variant = _pick_variant(comic["selected"], wp["type"], order, scene_idx)  # noqa: F841 (used once real)
+    # 2+3) tintinify scene + composite pet in one ComfyUI pass.
+    variant = _pick_variant(comic["selected"], wp["type"], order, scene_idx)
     panel_path = os.path.join(comic["dir"], f"panel_{suffix}.png")
-    make_panel(scene_path, comic["pet"]["image_path"], location, panel_path, index=order + scene_idx)
+    variant_path = variant.get("path")
+    if variant_path and os.path.exists(variant_path):
+        result = comfy.composite_panel(scene_path, variant_path, panel_path, seed=seed)
+        if result != panel_path:
+            make_panel(scene_path, comic["pet"]["image_path"], location, panel_path, index=order + scene_idx)
+    else:
+        make_panel(scene_path, comic["pet"]["image_path"], location, panel_path, index=order + scene_idx)
 
     meta["scene_idx"] = scene_idx
     comic["panel_paths"][order] = panel_path
@@ -114,9 +120,6 @@ async def generate_comic(req: GenerateComicRequest) -> GenerateComicResponse:
     comic_dir = os.path.join(GENERATED_DIR, "comics", comic_id)
     waypoints = sorted(req.waypoints, key=lambda w: w.order)[:MAX_STOPS]
 
-    # Store everything needed to (re)build any single panel later: the pet, the
-    # chosen characters, and per-panel waypoint + roll state. panel_paths is the
-    # current image per panel, used by /export.
     comic = {
         "comic_id": comic_id,
         "dir": comic_dir,
@@ -132,6 +135,61 @@ async def generate_comic(req: GenerateComicRequest) -> GenerateComicResponse:
 
     panels = [_build_panel(comic, i, 0) for i in range(len(waypoints))]
     return GenerateComicResponse(comic_id=comic_id, panels=panels)
+
+
+@router.post("/generate-stream")
+async def generate_comic_stream(req: GenerateComicRequest):
+    """SSE endpoint — streams each comic panel as it finishes."""
+    pet = PETS.get(req.pet_id)
+    if pet is None:
+        raise HTTPException(status_code=404, detail="Unknown pet — upload first.")
+    if len(req.waypoints) < 2:
+        raise HTTPException(status_code=400, detail="Add at least 2 waypoints.")
+
+    stored = pet.get("variants", {})
+    selected = [stored[v] for v in req.selected_variant_ids if v in stored]
+    if not selected:
+        raise HTTPException(status_code=400, detail="Pick at least one character first.")
+
+    comic_id = uuid.uuid4().hex[:12]
+    comic_dir = os.path.join(GENERATED_DIR, "comics", comic_id)
+    waypoints = sorted(req.waypoints, key=lambda w: w.order)[:MAX_STOPS]
+
+    comic = {
+        "comic_id": comic_id,
+        "dir": comic_dir,
+        "pet": pet,
+        "selected": selected,
+        "panel_paths": [None] * len(waypoints),
+        "panels": [
+            {"order": i, "wp": {"lat": wp.lat, "lng": wp.lng, "type": wp.type, "name": wp.name}, "scene_idx": 0}
+            for i, wp in enumerate(waypoints)
+        ],
+    }
+    COMICS[comic_id] = comic
+
+    def event_stream():
+        total = len(waypoints)
+        yield f"data: {json.dumps({'type': 'start', 'comic_id': comic_id, 'total': total})}\n\n"
+
+        for i in range(total):
+            panel = _build_panel(comic, i, 0)
+            panel_data = {
+                "type": "panel",
+                "index": i,
+                "total": total,
+                "panel": {
+                    "order": panel.order,
+                    "image_url": panel.image_url,
+                    "location_name": panel.location_name,
+                    "type": panel.type,
+                },
+            }
+            yield f"data: {json.dumps(panel_data)}\n\n"
+
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @router.post("/regenerate-panel", response_model=Panel)
