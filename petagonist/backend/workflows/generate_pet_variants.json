@@ -474,7 +474,7 @@
   },
   "1101:765": {
     "inputs": {
-      "prompt": "prompt"
+      "prompt": "text, words, letters, writing, watermark, signature, logo, title, caption, label, bipedal, two legs, anthropomorphic, humanoid, standing upright on two legs, hands, fingers, human body"
     },
     "class_type": "CR Prompt Text",
     "_meta": {

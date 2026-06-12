@@ -24,7 +24,8 @@ COMFYUI_URL = os.environ.get("COMFYUI_URL", "http://localhost:8188")
 
 STYLE_PREFIX = (
     "PETAGONIST.2, comic style, small black dot eyes, one line eyebrows, "
-    "simplified details, paper texture, bright colors, pet in photo "
+    "simplified details, paper texture, bright colors, "
+    "quadruped, four legs, animal anatomy, pet in photo "
 )
 
 _STRIP_NODES = {
