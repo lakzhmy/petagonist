@@ -36,11 +36,11 @@ export default function ComicStrip({ comic, onRestart, generating, progress }) {
     setCaptions((c) => ({ ...c, [i]: text }))
   }
 
-  async function regenerate(order) {
+  async function regenerate(order, mode = 'all') {
     setRolling((r) => ({ ...r, [order]: true }))
     setError('')
     try {
-      const updated = await regeneratePanel({ comic_id: comic.comic_id, order })
+      const updated = await regeneratePanel({ comic_id: comic.comic_id, order, mode })
       setPanels((ps) => ps.map((p) => (p.order === order ? updated : p)))
     } catch (e) {
       setError(e.message || 'Could not re-roll that panel.')
@@ -101,7 +101,7 @@ export default function ComicStrip({ comic, onRestart, generating, progress }) {
                 key={panels[i].order}
                 panel={panels[i]}
                 index={i}
-                onRegenerate={() => regenerate(panels[i].order)}
+                onRegenerate={generating ? null : (mode) => regenerate(panels[i].order, mode)}
                 rolling={!!rolling[panels[i].order]}
               />
             )

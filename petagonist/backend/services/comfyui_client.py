@@ -44,13 +44,19 @@ PANEL_PROMPT = (
     "comic style, tintin comic style, flat color, paper texture, "
     "Place the pet in Image 1 onto Image 2. "
     "Image 2 should be in tintin comic style. "
-    "The pet in Image 1 is doing an action."
+    "The pet in Image 1 is doing an action. "
+    "small pet, pet is smaller than people, correct animal proportions, "
+    "pet on the ground, natural scale"
 )
 
 PANEL_NEGATIVE = (
-    "text, words, letters, writing, watermark, signature, logo, title, "
+    "PETAGONIST, petagonist, Petagonist, text, words, letters, writing, "
+    "watermark, signature, logo, title, signage, banner, sign, "
+    "speech bubble, comic bubble, dialogue box, caption, "
     "multiple pets, duplicate pet, extra animals, "
-    "deformed, mutated, disfigured, extra limbs"
+    "extra limbs, extra legs, extra arms, multiple heads, extra head, "
+    "giant animal, oversized pet, huge pet, pet larger than human, "
+    "deformed, mutated, disfigured, malformed"
 )
 
 _PANEL_STRIP_NODES = {
@@ -87,7 +93,10 @@ _VARIANT_WF = _load_workflow(
 _PANEL_WF = _load_workflow(
     "composite_pet_into_scene.json",
     _PANEL_STRIP_NODES,
-    {"1236:1186": {"prompt": PANEL_NEGATIVE}},
+    {
+        "1236:1186": {"prompt": PANEL_NEGATIVE},
+        "1236:1185": {"value": 3.5},
+    },
 )
 
 

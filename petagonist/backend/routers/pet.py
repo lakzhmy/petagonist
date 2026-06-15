@@ -191,7 +191,11 @@ async def regenerate_variant(pet_id: str, old_variant_id: str = "", pose_prompt:
         raise HTTPException(status_code=404, detail="Unknown pet — upload first.")
 
     if not pose_prompt:
-        pose_prompt = random.choice(POSE_PROMPTS)
+        used_poses = {v["pose_prompt"] for v in pet.get("variants", {}).values()}
+        available = [p for p in POSE_PROMPTS if p not in used_poses]
+        if not available:
+            available = POSE_PROMPTS
+        pose_prompt = random.choice(available)
 
     idx = pet.get("next_index", 0)
     pet["next_index"] = idx + 1

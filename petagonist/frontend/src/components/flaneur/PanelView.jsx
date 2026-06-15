@@ -1,10 +1,8 @@
 import { getType } from '../../utils/waypointTypes'
 
 /**
- * PanelView — a single comic frame in the result grid. The image already carries
- * its caption + frame from the backend; here we add the soft Petagonist frame,
- * paper texture, a number badge, a type tag, and a ↻ re-roll button that swaps
- * this stop for a different scene + pose.
+ * PanelView — a single comic frame in the result grid. Shows split re-roll
+ * buttons on hover: one for the background (scene), one for the character.
  */
 export default function PanelView({ panel, index = 0, onRegenerate, rolling = false }) {
   const type = getType(panel.type)
@@ -18,20 +16,34 @@ export default function PanelView({ panel, index = 0, onRegenerate, rolling = fa
           loading="lazy"
         />
 
-        {/* Re-roll button — appears on hover; spins while rolling */}
-        {onRegenerate && (
-          <button
-            type="button"
-            onClick={onRegenerate}
-            disabled={rolling}
-            aria-label={`Regenerate ${panel.location_name}`}
-            title="Re-roll this panel"
-            className={`spring absolute bottom-2 right-2 grid h-9 w-9 place-items-center rounded-full bg-grape text-lg text-white shadow-[var(--shadow-lift)] hover:bg-tang ${
-              rolling ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-            }`}
-          >
-            <span className={rolling ? 'inline-block animate-spin' : ''}>↻</span>
-          </button>
+        {/* Split re-roll buttons — appear on hover */}
+        {onRegenerate && !rolling && (
+          <div className="spring absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={() => onRegenerate('background')}
+              title="Re-roll background"
+              className="spring grid h-8 w-8 place-items-center rounded-full bg-grape text-sm text-white shadow-[var(--shadow-lift)] hover:bg-tang"
+            >
+              🏙
+            </button>
+            <button
+              type="button"
+              onClick={() => onRegenerate('character')}
+              title="Re-roll character"
+              className="spring grid h-8 w-8 place-items-center rounded-full bg-grape text-sm text-white shadow-[var(--shadow-lift)] hover:bg-tang"
+            >
+              🐾
+            </button>
+            <button
+              type="button"
+              onClick={() => onRegenerate('all')}
+              title="Re-roll both"
+              className="spring grid h-8 w-8 place-items-center rounded-full bg-grape text-lg text-white shadow-[var(--shadow-lift)] hover:bg-tang"
+            >
+              ↻
+            </button>
+          </div>
         )}
 
         {/* Dim while a new scene is being drawn */}

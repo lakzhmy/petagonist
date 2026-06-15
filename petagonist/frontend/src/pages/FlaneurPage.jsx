@@ -172,7 +172,12 @@ export default function FlaneurPage() {
   }
 
   function backToUpload() {
-    if (abortRef.current) abortRef.current()
+    if (abortRef.current) {
+      abortRef.current()
+      abortRef.current = null
+    }
+    setGenerating(false)
+    setProgress(null)
     setVariants([])
     setSelectedIds([])
     setPet(null)

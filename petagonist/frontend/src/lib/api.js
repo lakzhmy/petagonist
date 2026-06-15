@@ -199,14 +199,14 @@ export function streamComic(payload, { onStart, onPanel, onDone, onError }) {
 }
 
 /**
- * Re-roll a single panel (new scene + pose for that stop).
+ * Re-roll a single panel. mode: "all" | "background" | "character"
  * Returns the updated panel { order, image_url, location_name, type }.
  */
-export async function regeneratePanel({ comic_id, order }) {
+export async function regeneratePanel({ comic_id, order, mode = 'all' }) {
   const res = await fetch('/api/flaneur/regenerate-panel', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ comic_id, order }),
+    body: JSON.stringify({ comic_id, order, mode }),
   })
   return handle(res)
 }

@@ -78,3 +78,4 @@ class ExportResponse(BaseModel):
 class RegeneratePanelRequest(BaseModel):
     comic_id: str
     order: int
+    mode: str = "all"  # "all" | "character" | "background"
