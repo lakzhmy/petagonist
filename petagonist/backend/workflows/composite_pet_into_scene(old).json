@@ -1,7 +1,7 @@
 {
   "1211": {
     "inputs": {
-      "filename_prefix": "2026-06-15/20260615_110159_output",
+      "filename_prefix": "2026-06-11/20260611_222337_output",
       "images": [
         "1236:1166",
         0
@@ -77,18 +77,6 @@
     "class_type": "ImageResizeKJv2",
     "_meta": {
       "title": "Resize Image v2"
-    }
-  },
-  "1242": {
-    "inputs": {
-      "image": [
-        "1216",
-        0
-      ]
-    },
-    "class_type": "Image Remove Background (rembg)",
-    "_meta": {
-      "title": "Image Remove Background (rembg)"
     }
   },
   "1236:1162": {
@@ -269,7 +257,7 @@
       "megapixels": 1,
       "resolution_steps": 1,
       "image": [
-        "1242",
+        "1216",
         0
       ]
     },
