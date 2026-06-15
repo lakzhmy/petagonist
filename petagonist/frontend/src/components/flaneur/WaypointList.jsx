@@ -19,7 +19,7 @@ import { getType } from '../../utils/waypointTypes'
  * WaypointList — ordered list of dropped waypoints. Drag to reorder, delete
  * per row. "Generate Comic" unlocks at 2+ waypoints.
  */
-export default function WaypointList({ waypoints, max, onRemove, onMove, onGenerate }) {
+export default function WaypointList({ waypoints, max, onRemove, onMove, onSelectPhoto, onGenerate }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   )
@@ -56,7 +56,7 @@ export default function WaypointList({ waypoints, max, onRemove, onMove, onGener
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={waypoints.map((w) => w.id)} strategy={verticalListSortingStrategy}>
               {waypoints.map((w, i) => (
-                <SortableRow key={w.id} w={w} index={i} onRemove={onRemove} />
+                <SortableRow key={w.id} w={w} index={i} onRemove={onRemove} onSelectPhoto={onSelectPhoto} />
               ))}
             </SortableContext>
           </DndContext>
@@ -77,7 +77,7 @@ export default function WaypointList({ waypoints, max, onRemove, onMove, onGener
   )
 }
 
-function SortableRow({ w, index, onRemove }) {
+function SortableRow({ w, index, onRemove, onSelectPhoto }) {
   const type = getType(w.type)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: w.id })
@@ -87,45 +87,82 @@ function SortableRow({ w, index, onRemove }) {
     zIndex: isDragging ? 50 : undefined,
   }
 
+  const photos = w.photos
+  const selectedId = w.selectedPhoto?.id
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 rounded-[var(--radius-soft)] bg-white/10 p-3 ${
+      className={`rounded-[var(--radius-soft)] bg-white/10 p-3 ${
         isDragging ? 'shadow-[var(--shadow-lift)] ring-2 ring-sun' : ''
       }`}
     >
-      {/* Drag handle */}
-      <button
-        {...attributes}
-        {...listeners}
-        className="cursor-grab touch-none px-1 text-white/50 hover:text-white active:cursor-grabbing"
-        aria-label="Drag to reorder"
-      >
-        ⠿
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab touch-none px-1 text-white/50 hover:text-white active:cursor-grabbing"
+          aria-label="Drag to reorder"
+        >
+          ⠿
+        </button>
 
-      <Tag tone="grape" className="h-8 w-8 justify-center !rounded-full">
-        {index + 1}
-      </Tag>
+        <Tag tone="grape" className="h-8 w-8 justify-center !rounded-full">
+          {index + 1}
+        </Tag>
 
-      <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-1.5 truncate font-display text-sm font-extrabold text-white">
-          <span title={type.label}>{type.icon}</span>
-          <span className="truncate">{w.name || `${type.label} stop`}</span>
-        </p>
-        <p className="truncate text-xs text-white/60">
-          {w.lat.toFixed(4)}, {w.lng.toFixed(4)}
-        </p>
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1.5 truncate font-display text-sm font-extrabold text-white">
+            <span title={type.label}>{type.icon}</span>
+            <span className="truncate">{w.name || `${type.label} stop`}</span>
+          </p>
+          <p className="truncate text-xs text-white/60">
+            {w.lat.toFixed(4)}, {w.lng.toFixed(4)}
+          </p>
+        </div>
+
+        <button
+          onClick={() => onRemove(w.id)}
+          className="spring grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white/70 hover:bg-tang hover:text-white"
+          aria-label={`Remove stop ${index + 1}`}
+        >
+          ✕
+        </button>
       </div>
 
-      <button
-        onClick={() => onRemove(w.id)}
-        className="spring grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white/70 hover:bg-tang hover:text-white"
-        aria-label={`Remove stop ${index + 1}`}
-      >
-        ✕
-      </button>
+      {/* Scene photo picker */}
+      {photos === null && (
+        <div className="mt-2 flex gap-1.5 overflow-x-auto">
+          <div className="h-12 w-16 animate-pulse rounded bg-white/10" />
+          <div className="h-12 w-16 animate-pulse rounded bg-white/10" />
+          <div className="h-12 w-16 animate-pulse rounded bg-white/10" />
+        </div>
+      )}
+      {photos && photos.length > 0 && (
+        <div className="mt-2 flex gap-1.5 overflow-x-auto">
+          {photos.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onSelectPhoto(w.id, p)}
+              className={`spring h-12 w-16 flex-shrink-0 overflow-hidden rounded border-2 ${
+                selectedId === p.id ? 'border-sun' : 'border-transparent hover:border-bubble'
+              }`}
+            >
+              <img
+                src={p.thumb_url}
+                alt="Street photo"
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+      {photos && photos.length === 0 && (
+        <p className="mt-1.5 text-xs text-white/40">No street photos nearby</p>
+      )}
     </div>
   )
 }

@@ -8,7 +8,7 @@ const nextId = () =>
 
 /**
  * useMapWaypoints — shared waypoint state for the map + the list.
- * A waypoint is { id, lng, lat }; its number is just its index + 1.
+ * A waypoint is { id, lng, lat, type, name, photos, selectedPhoto }.
  */
 export function useMapWaypoints(max = 10) {
   const [waypoints, setWaypoints] = useState([])
@@ -20,7 +20,13 @@ export function useMapWaypoints(max = 10) {
           ? w
           : [
               ...w,
-              { id: nextId(), lng, lat, type: meta.type || 'place', name: meta.name || null },
+              {
+                id: nextId(), lng, lat,
+                type: meta.type || 'place',
+                name: meta.name || null,
+                photos: null,
+                selectedPhoto: null,
+              },
             ]
       ),
     [max]
@@ -43,7 +49,23 @@ export function useMapWaypoints(max = 10) {
     []
   )
 
+  const setPhotos = useCallback(
+    (id, photos) =>
+      setWaypoints((w) =>
+        w.map((wp) => (wp.id === id ? { ...wp, photos, selectedPhoto: photos?.[0] ?? null } : wp))
+      ),
+    []
+  )
+
+  const selectPhoto = useCallback(
+    (wpId, photo) =>
+      setWaypoints((w) =>
+        w.map((wp) => (wp.id === wpId ? { ...wp, selectedPhoto: photo } : wp))
+      ),
+    []
+  )
+
   const clear = useCallback(() => setWaypoints([]), [])
 
-  return { waypoints, add, remove, move, clear, max, atMax: waypoints.length >= max }
+  return { waypoints, add, remove, move, setPhotos, selectPhoto, clear, max, atMax: waypoints.length >= max }
 }

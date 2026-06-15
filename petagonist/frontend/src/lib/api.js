@@ -199,6 +199,15 @@ export function streamComic(payload, { onStart, onPanel, onDone, onError }) {
 }
 
 /**
+ * Fetch Mapillary photo candidates near a point.
+ * Returns { photos: [{ id, thumb_url, full_url, is_pano }] }
+ */
+export async function fetchScenePhotos(lat, lng) {
+  const res = await fetch(`/api/mapillary/photos?lat=${lat}&lng=${lng}`)
+  return handle(res)
+}
+
+/**
  * Re-roll a single panel. mode: "all" | "background" | "character"
  * Returns the updated panel { order, image_url, location_name, type }.
  */

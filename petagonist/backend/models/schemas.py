@@ -35,6 +35,7 @@ class Waypoint(BaseModel):
     order: int
     type: str = "place"
     name: str | None = None
+    scene_url: str | None = None
 
 
 class GenerateComicRequest(BaseModel):

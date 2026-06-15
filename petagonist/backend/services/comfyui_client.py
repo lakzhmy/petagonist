@@ -25,10 +25,20 @@ COMFYUI_URL = os.environ.get("COMFYUI_URL", "http://localhost:8188")
 
 # -- Seam 1 constants --------------------------------------------------------
 
-STYLE_PREFIX = (
-    "PETAGONIST.2, comic style, small black dot eyes, one line eyebrows, "
+STYLE_SUFFIX = (
+    "comic style, small black dot eyes, one line eyebrows, "
     "simplified details, paper texture, bright colors, "
-    "quadruped, four legs, animal anatomy, pet in photo "
+    "quadruped, four legs, animal anatomy"
+)
+
+VARIANT_NEGATIVE = (
+    "PETAGONIST, petagonist, Petagonist, PETGONSIST, petgonsist, "
+    "text, words, letters, writing, watermark, signature, logo, title, "
+    "caption, label, banner, signage, typographic, speech bubble, "
+    "bipedal, two legs, anthropomorphic, humanoid, standing upright on two legs, "
+    "hands, fingers, human body, "
+    "multiple heads, two heads, extra head, multiple tails, "
+    "extra limbs, extra legs, deformed, mutated, disfigured, fused"
 )
 
 _VARIANT_STRIP_NODES = {
@@ -87,7 +97,10 @@ def _load_workflow(filename: str, strip: set[str], patches: dict | None = None) 
 _VARIANT_WF = _load_workflow(
     "generate_pet_variants.json",
     _VARIANT_STRIP_NODES,
-    {"1198": {"string_a": ""}},
+    {
+        "1198": {"string_a": ""},
+        "1101:765": {"prompt": VARIANT_NEGATIVE},
+    },
 )
 
 _PANEL_WF = _load_workflow(
@@ -190,7 +203,7 @@ class ComfyUIClient:
                 wf = copy.deepcopy(_VARIANT_WF)
                 wf["1097"]["inputs"]["image"] = comfy_filename
                 desc_part = f"{description}, " if description else ""
-                wf["1198"]["inputs"]["string_a"] = STYLE_PREFIX + desc_part + pose
+                wf["1198"]["inputs"]["string_a"] = pose + ", " + desc_part + STYLE_SUFFIX
                 wf["1159"]["inputs"]["value"] = (hash(pet_id) + index) % (2**31)
                 wf["1102"]["inputs"]["filename_prefix"] = (
                     f"petagonist/{pet_id}/variant_{index:02d}"

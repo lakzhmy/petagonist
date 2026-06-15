@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import PageWrapper from '../components/layout/PageWrapper'
 import Tag from '../components/ui/Tag'
 import PetUploader from '../components/shared/PetUploader'
@@ -8,7 +8,7 @@ import MapWithWaypoints from '../components/flaneur/MapWithWaypoints'
 import WaypointList from '../components/flaneur/WaypointList'
 import ComicStrip from '../components/flaneur/ComicStrip'
 import { useMapWaypoints } from '../hooks/useMapWaypoints'
-import { uploadPet, streamVariants, streamMoreVariants, regenerateVariant, streamComic } from '../lib/api'
+import { uploadPet, streamVariants, streamMoreVariants, regenerateVariant, streamComic, fetchScenePhotos } from '../lib/api'
 
 const STEPS = [
   { n: 1, title: 'Your Pet', tone: 'tang' },
@@ -31,6 +31,17 @@ export default function FlaneurPage() {
   const wp = useMapWaypoints(8)
   const abortRef = useRef(null)
   const comicAbortRef = useRef(null)
+
+  useEffect(() => {
+    for (const w of wp.waypoints) {
+      if (w.photos === null) {
+        wp.setPhotos(w.id, [])
+        fetchScenePhotos(w.lat, w.lng)
+          .then(({ photos }) => wp.setPhotos(w.id, photos))
+          .catch(() => {})
+      }
+    }
+  }, [wp.waypoints])
 
   async function handleGenerate({ file, description }) {
     setLoading(true)
@@ -128,6 +139,7 @@ export default function FlaneurPage() {
         order: i,
         type: w.type,
         name: w.name,
+        scene_url: w.selectedPhoto?.full_url ?? null,
       })),
     }
 
@@ -290,6 +302,7 @@ export default function FlaneurPage() {
                   max={wp.max}
                   onRemove={wp.remove}
                   onMove={wp.move}
+                  onSelectPhoto={wp.selectPhoto}
                   onGenerate={handleGenerateComic}
                 />
               </div>

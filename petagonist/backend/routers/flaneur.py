@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import io
 import json
+import logging
 import os
+import urllib.request
 import uuid
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
+from PIL import Image, ImageEnhance, ImageOps
+
+log = logging.getLogger(__name__)
 
 from models.schemas import (
     ExportRequest,
@@ -45,6 +51,22 @@ TYPE_KEYWORDS = {
 }
 
 
+def _download_scene(url: str, out_path: str, size: tuple[int, int] = (900, 600)) -> None:
+    """Download a Mapillary photo by its thumb URL and save it locally."""
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "petagonist/0.1"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            photo = Image.open(io.BytesIO(r.read())).convert("RGB")
+        photo = ImageOps.fit(photo, size, Image.LANCZOS)
+        photo = ImageEnhance.Color(photo).enhance(1.25)
+        photo = ImageEnhance.Contrast(photo).enhance(1.08)
+        photo = ImageOps.posterize(photo, 5)
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        photo.save(out_path, "PNG")
+    except Exception:
+        log.exception("Failed to download pre-selected scene")
+
+
 def _pick_variant(selected: list[dict], wp_type: str, order: int, variant_idx: int) -> dict:
     """Choose which character/pose stars in a panel.
 
@@ -80,13 +102,15 @@ def _build_panel(comic: dict, order: int, scene_idx: int, variant_idx: int) -> P
     location = wp["name"] or f"Stop {order + 1}"
     suffix = f"{order:02d}_s{scene_idx}_c{variant_idx}"
 
-    # 1) scene source — Mapillary street photo (with drawn fallback).
+    # 1) scene source — pre-selected Mapillary photo, or search + fallback.
     scene_path = os.path.join(comic["dir"], f"scene_{order:02d}_s{scene_idx}.png")
     seed = (order * 1000 + scene_idx) & 0xFFFF
 
     prev_scene = meta.get("_scene_path")
     if prev_scene and os.path.exists(prev_scene) and scene_idx == meta.get("scene_idx", 0):
         scene_path = prev_scene
+    elif wp.get("scene_url") and scene_idx == 0:
+        _download_scene(wp["scene_url"], scene_path)
     else:
         streetview.fetch_street_view(wp["lat"], wp["lng"], wp["type"], location, scene_path, seed=seed)
 
@@ -133,7 +157,7 @@ async def generate_comic(req: GenerateComicRequest) -> GenerateComicResponse:
         "selected": selected,
         "panel_paths": [None] * len(waypoints),
         "panels": [
-            {"order": i, "wp": {"lat": wp.lat, "lng": wp.lng, "type": wp.type, "name": wp.name}, "scene_idx": 0, "variant_idx": 0}
+            {"order": i, "wp": {"lat": wp.lat, "lng": wp.lng, "type": wp.type, "name": wp.name, "scene_url": wp.scene_url}, "scene_idx": 0, "variant_idx": 0}
             for i, wp in enumerate(waypoints)
         ],
     }
@@ -168,7 +192,7 @@ async def generate_comic_stream(req: GenerateComicRequest):
         "selected": selected,
         "panel_paths": [None] * len(waypoints),
         "panels": [
-            {"order": i, "wp": {"lat": wp.lat, "lng": wp.lng, "type": wp.type, "name": wp.name}, "scene_idx": 0, "variant_idx": 0}
+            {"order": i, "wp": {"lat": wp.lat, "lng": wp.lng, "type": wp.type, "name": wp.name, "scene_url": wp.scene_url}, "scene_idx": 0, "variant_idx": 0}
             for i, wp in enumerate(waypoints)
         ],
     }
