@@ -78,16 +78,14 @@ PANEL_NEGATIVE = (
     "deformed, mutated, disfigured, malformed"
 )
 
-# Strip SaveParamsSVG logging chains + preview from both passes
+# Strip SaveParamsSVG logging chains from both passes
 _PANEL_STRIP_NODES = {
     # Pass 1 (scene tintinify) logging
-    "1304:758", "1304:759", "1304:760", "1304:762",
-    "1304:847", "1304:848", "1304:849", "1304:853", "1304:854",
+    "1447:1418", "1447:1419", "1447:1420",
+    "1447:1427", "1447:1428", "1447:1429", "1447:1430", "1447:1431",
     # Pass 2 (composite) logging
-    "1353:1331", "1353:1332", "1353:1333", "1353:1335",
-    "1353:1340", "1353:1341", "1353:1342", "1353:1343", "1353:1344",
-    # Preview node
-    "1306",
+    "1443:1377", "1443:1378", "1443:1379",
+    "1443:1386", "1443:1387", "1443:1388", "1443:1389", "1443:1390",
 }
 
 # -- Load workflow templates --------------------------------------------------
@@ -122,14 +120,16 @@ _PANEL_WF = _load_workflow(
     "composite_pet_into_scene.json",
     _PANEL_STRIP_NODES,
     {
-        # Pass 1: scene tintinify — prompt + negative + CFG
-        "1305": {"value": SCENE_PROMPT},
-        "1304:765": {"prompt": PANEL_NEGATIVE},
-        "1304:764": {"value": 2.5},
-        # Pass 2: composite — negative + CFG + prompt
-        "1301": {"value": PANEL_NEGATIVE},
-        "1353:1337": {"value": 2.5},
-        "1355": {"value": COMPOSITE_PROMPT},
+        # Pass 1: scene tintinify
+        # 1447:1421 → positive conditioning, 1449 → negative conditioning
+        "1447:1421": {"prompt": SCENE_PROMPT},
+        "1449": {"value": ""},
+        "1447:1424": {"value": 2.5},
+        # Pass 2: composite
+        # 1445 → positive conditioning, 1446 → negative conditioning
+        "1445": {"value": COMPOSITE_PROMPT},
+        "1446": {"value": PANEL_NEGATIVE},
+        "1443:1383": {"value": 2.5},
     },
 )
 
@@ -306,9 +306,8 @@ class ComfyUIClient:
             return scene_path
 
         try:
-            clean_pet_path = self._remove_bg(pet_variant_path)
             scene_comfy = self._upload_image(scene_path)
-            pet_comfy = self._upload_image(clean_pet_path)
+            pet_comfy = self._upload_image(pet_variant_path)
         except Exception:
             log.exception("Failed to upload images for panel compositing")
             return scene_path
@@ -316,18 +315,18 @@ class ComfyUIClient:
         try:
             wf = copy.deepcopy(_PANEL_WF)
             # Input images
-            wf["1294"]["inputs"]["image"] = pet_comfy
-            wf["1295"]["inputs"]["image"] = scene_comfy
+            wf["1441"]["inputs"]["image"] = pet_comfy
+            wf["1450"]["inputs"]["image"] = scene_comfy
             # Seeds for both passes
-            wf["1304:754"]["inputs"]["value"] = seed % (2**31)
-            wf["1353:1327"]["inputs"]["value"] = (seed + 42) % (2**31)
+            wf["1447:1414"]["inputs"]["value"] = seed % (2**31)
+            wf["1443:1373"]["inputs"]["value"] = (seed + 42) % (2**31)
             # Output path
-            wf["1354"]["inputs"]["filename_prefix"] = (
+            wf["1444"]["inputs"]["filename_prefix"] = (
                 f"petagonist/panels/{os.path.basename(out_path).replace('.png', '')}"
             )
 
             history = self._submit_and_wait(wf, timeout=300)
-            images = history["outputs"]["1354"]["images"]
+            images = history["outputs"]["1444"]["images"]
             self._download_output(images[0], out_path)
             log.info("Panel composited: %s", os.path.basename(out_path))
             return out_path

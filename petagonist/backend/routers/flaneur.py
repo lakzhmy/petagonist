@@ -114,6 +114,13 @@ def _build_panel(comic: dict, order: int, scene_idx: int, variant_idx: int) -> P
     else:
         streetview.fetch_street_view(wp["lat"], wp["lng"], wp["type"], location, scene_path, seed=seed)
 
+    # If the scene file wasn't created (no Mapillary coverage, network error),
+    # generate a simple placeholder so downstream steps don't crash.
+    if not os.path.exists(scene_path):
+        log.warning("Scene missing for stop %d — creating placeholder", order)
+        os.makedirs(os.path.dirname(scene_path), exist_ok=True)
+        Image.new("RGB", (900, 600), (200, 210, 220)).save(scene_path, "PNG")
+
     # 2+3) tintinify scene + composite pet in one ComfyUI pass.
     variant = _pick_variant(comic["selected"], wp["type"], order, variant_idx)
     panel_path = os.path.join(comic["dir"], f"panel_{suffix}.png")
