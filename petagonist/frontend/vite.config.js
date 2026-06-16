@@ -11,7 +11,7 @@ export default defineConfig({
     // frontend can call relative URLs and avoid CORS headaches.
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8002',
         configure: (proxy) => {
           proxy.on('proxyRes', (proxyRes) => {
             if (proxyRes.headers['content-type']?.includes('text/event-stream')) {
@@ -21,7 +21,7 @@ export default defineConfig({
           })
         },
       },
-      '/static': 'http://localhost:8000',
+      '/static': 'http://localhost:8002',
     },
   },
 })

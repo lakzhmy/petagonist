@@ -16,8 +16,15 @@ import time
 import uuid
 
 import requests
+from PIL import Image
 
 from .placeholders import generate_variant_card
+
+try:
+    from rembg import remove as rembg_remove
+    _HAS_REMBG = True
+except ImportError:
+    _HAS_REMBG = False
 
 log = logging.getLogger(__name__)
 
@@ -50,11 +57,13 @@ _VARIANT_STRIP_NODES = {
 
 # -- Seam 2+3 constants ------------------------------------------------------
 
-PANEL_PROMPT = (
+PANEL_PROMPT_TEMPLATE = (
     "comic style, tintin comic style, flat color, paper texture, "
-    "Place the pet in Image 1 onto Image 2. "
+    "Image 1 is a {pet_desc} in comic style. "
+    "Place this exact {pet_desc} onto Image 2. "
+    "The {pet_desc} is {pose}. "
+    "Preserve the exact breed, color, and markings of the pet from Image 1. "
     "Image 2 should be in tintin comic style. "
-    "The pet in Image 1 is doing an action. "
     "small pet, pet is smaller than people, correct animal proportions, "
     "pet on the ground, natural scale"
 )
@@ -120,6 +129,30 @@ class ComfyUIClient:
 
     def __init__(self, generated_root: str):
         self.generated_root = generated_root
+
+    @staticmethod
+    def _remove_bg(image_path: str) -> str:
+        """Remove background from a variant image, saving a _clean.png version.
+
+        Returns the path to the cleaned image, or the original if rembg fails.
+        """
+        clean_path = image_path.replace(".png", "_clean.png")
+        if os.path.exists(clean_path):
+            return clean_path
+        if not _HAS_REMBG:
+            return image_path
+        try:
+            img = Image.open(image_path)
+            result = rembg_remove(img)
+            # Paste onto white background so ComfyUI gets a clean RGB image
+            bg = Image.new("RGB", result.size, (255, 255, 255))
+            bg.paste(result, mask=result.split()[3] if result.mode == "RGBA" else None)
+            bg.save(clean_path, "PNG")
+            log.info("Background removed: %s", os.path.basename(clean_path))
+            return clean_path
+        except Exception:
+            log.exception("rembg failed — using original variant image")
+            return image_path
 
     def _is_available(self) -> bool:
         try:
@@ -249,6 +282,8 @@ class ComfyUIClient:
         pet_variant_path: str,
         out_path: str,
         seed: int = 0,
+        pet_description: str = "",
+        pose_prompt: str = "",
     ) -> str:
         """Tintinify a scene and composite the pet into it in one ComfyUI pass.
 
@@ -259,17 +294,22 @@ class ComfyUIClient:
             return scene_path
 
         try:
+            clean_pet_path = self._remove_bg(pet_variant_path)
             scene_comfy = self._upload_image(scene_path)
-            pet_comfy = self._upload_image(pet_variant_path)
+            pet_comfy = self._upload_image(clean_pet_path)
         except Exception:
             log.exception("Failed to upload images for panel compositing")
             return scene_path
+
+        pet_desc = pet_description.strip() if pet_description else "pet"
+        pose = pose_prompt.strip() if pose_prompt else "doing an action"
+        prompt = PANEL_PROMPT_TEMPLATE.format(pet_desc=pet_desc, pose=pose)
 
         try:
             wf = copy.deepcopy(_PANEL_WF)
             wf["1213"]["inputs"]["image"] = pet_comfy
             wf["1215"]["inputs"]["image"] = scene_comfy
-            wf["1214"]["inputs"]["value"] = PANEL_PROMPT
+            wf["1214"]["inputs"]["value"] = prompt
             wf["1236:1175"]["inputs"]["value"] = seed % (2**31)
             wf["1211"]["inputs"]["filename_prefix"] = (
                 f"petagonist/panels/{os.path.basename(out_path).replace('.png', '')}"

@@ -119,8 +119,13 @@ def _build_panel(comic: dict, order: int, scene_idx: int, variant_idx: int) -> P
     panel_path = os.path.join(comic["dir"], f"panel_{suffix}.png")
     comfy_seed = (order * 1000 + scene_idx * 100 + variant_idx) & 0xFFFF
     variant_path = variant.get("path")
+    pet_description = comic["pet"].get("description", "")
+    pose_prompt = variant.get("pose_prompt", "")
     if variant_path and os.path.exists(variant_path):
-        result = comfy.composite_panel(scene_path, variant_path, panel_path, seed=comfy_seed)
+        result = comfy.composite_panel(
+            scene_path, variant_path, panel_path, seed=comfy_seed,
+            pet_description=pet_description, pose_prompt=pose_prompt,
+        )
         if result != panel_path:
             make_panel(scene_path, comic["pet"]["image_path"], location, panel_path, index=order + variant_idx)
     else:

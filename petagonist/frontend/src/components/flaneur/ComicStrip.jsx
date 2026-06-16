@@ -41,6 +41,7 @@ export default function ComicStrip({ comic, onRestart, generating, progress }) {
     setError('')
     try {
       const updated = await regeneratePanel({ comic_id: comic.comic_id, order, mode })
+      updated.image_url += `?t=${Date.now()}`
       setPanels((ps) => ps.map((p) => (p.order === order ? updated : p)))
     } catch (e) {
       setError(e.message || 'Could not re-roll that panel.')
@@ -98,7 +99,7 @@ export default function ComicStrip({ comic, onRestart, generating, progress }) {
           if (i < n) {
             return (
               <PanelView
-                key={panels[i].order}
+                key={`${panels[i].order}-${panels[i].image_url}`}
                 panel={panels[i]}
                 index={i}
                 onRegenerate={generating ? null : (mode) => regenerate(panels[i].order, mode)}
