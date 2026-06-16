@@ -8,12 +8,12 @@ export default function PanelView({ panel, index = 0, onRegenerate, rolling = fa
   const type = getType(panel.type)
   return (
     <figure className="paper-noise spring group relative w-full hover:scale-[1.02]">
-      <div className="pv-frame relative aspect-[3/2] overflow-hidden bg-white">
+      <div className="pv-frame relative overflow-hidden bg-white">
         <img
           key={panel.image_url}
           src={panel.image_url}
           alt={panel.location_name}
-          className="block h-full w-full object-cover"
+          className="block w-full"
           onError={(e) => {
             const src = e.target.src
             if (!src.includes('&retry=')) {
