@@ -1,45 +1,23 @@
 {
-  "1211": {
+  "1294": {
     "inputs": {
-      "filename_prefix": "2026-06-15/20260615_110159_output",
-      "images": [
-        "1236:1166",
-        0
-      ]
-    },
-    "class_type": "SaveImage",
-    "_meta": {
-      "title": "Save Image"
-    }
-  },
-  "1213": {
-    "inputs": {
-      "image": "variant_04_00001_.png"
+      "image": "variant_02_d40930c7.png"
     },
     "class_type": "LoadImage",
     "_meta": {
       "title": "Pet Image"
     }
   },
-  "1214": {
+  "1295": {
     "inputs": {
-      "value": "comic style, tintin comic style, flat color, paper texture, Place the pet in Image 1 onto Image 2. Image 2 should be in tintin comic style. The pet in Image 1 is doing an action."
-    },
-    "class_type": "PrimitiveStringMultiline",
-    "_meta": {
-      "title": "String (Multiline)"
-    }
-  },
-  "1215": {
-    "inputs": {
-      "image": "Screenshot 2026-06-11 220614.png"
+      "image": "scene_01_s0.png"
     },
     "class_type": "LoadImage",
     "_meta": {
       "title": "Scene Image"
     }
   },
-  "1216": {
+  "1296": {
     "inputs": {
       "width": 1024,
       "height": 1024,
@@ -50,7 +28,7 @@
       "divisible_by": 2,
       "device": "cpu",
       "image": [
-        "1213",
+        "1294",
         0
       ]
     },
@@ -59,7 +37,7 @@
       "title": "Resize Image v2"
     }
   },
-  "1217": {
+  "1297": {
     "inputs": {
       "width": 1024,
       "height": 1024,
@@ -70,7 +48,7 @@
       "divisible_by": 2,
       "device": "cpu",
       "image": [
-        "1215",
+        "1295",
         0
       ]
     },
@@ -79,19 +57,77 @@
       "title": "Resize Image v2"
     }
   },
-  "1242": {
+  "1300": {
     "inputs": {
-      "image": [
-        "1216",
+      "rem_mode": "Inspyrenet",
+      "image_output": "Preview",
+      "save_prefix": "ComfyUI",
+      "torchscript_jit": false,
+      "add_background": "none",
+      "refine_foreground": false,
+      "images": [
+        "1296",
         0
       ]
     },
-    "class_type": "Image Remove Background (rembg)",
+    "class_type": "easy imageRemBg",
     "_meta": {
-      "title": "Image Remove Background (rembg)"
+      "title": "Image Remove Bg"
     }
   },
-  "1236:1162": {
+  "1301": {
+    "inputs": {
+      "value": "PETAGONIST, petagonist, Petagonist, text, words, letters, writing,\nwatermark, signature, logo, title, signage, banner, sign,\nspeech bubble, comic bubble, dialogue box, caption,\nmultiple pets, duplicate pet, extra animals,\nextra limbs, extra legs, extra arms, multiple heads, extra head,\ngiant animal, oversized pet, huge pet, pet larger than human,\ndeformed, mutated, disfigured, malformed"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "String (Multiline)"
+    }
+  },
+  "1305": {
+    "inputs": {
+      "value": "comic style, tintin comic style, flat color, paper texture"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "String (Multiline)"
+    }
+  },
+  "1306": {
+    "inputs": {
+      "images": [
+        "1304:745",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "1354": {
+    "inputs": {
+      "filename_prefix": "2026-06-15/20260615_204434_output",
+      "images": [
+        "1353:1318",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "1355": {
+    "inputs": {
+      "value": "comic style, tintin comic style, flat color, paper texture, Place pet in Image 1 onto Image 2. Preserve the exact breed, color, and markings of the pet from Image 1. Image 2 should be in tintin comic style. small pet, pet is smaller than people, correct animal proportions, pet on the ground, natural scale, PETAGONIST.2"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "String (Multiline)"
+    }
+  },
+  "1304:741": {
     "inputs": {
       "sampler_name": "euler"
     },
@@ -100,18 +136,18 @@
       "title": "KSamplerSelect"
     }
   },
-  "1236:1163": {
+  "1304:742": {
     "inputs": {
       "steps": [
-        "1236:1176",
+        "1304:755",
         0
       ],
       "width": [
-        "1236:1177",
+        "1304:756",
         0
       ],
       "height": [
-        "1236:1178",
+        "1304:757",
         0
       ]
     },
@@ -120,22 +156,22 @@
       "title": "Flux2Scheduler"
     }
   },
-  "1236:1164": {
+  "1304:743": {
     "inputs": {
       "cfg": [
-        "1236:1185",
+        "1304:764",
         0
       ],
       "model": [
-        "1236:1187",
+        "1304:766",
         0
       ],
       "positive": [
-        "1236:1240:1239",
+        "1304:753:769",
         0
       ],
       "negative": [
-        "1236:1240:1237",
+        "1304:753:767",
         0
       ]
     },
@@ -144,26 +180,26 @@
       "title": "CFGGuider"
     }
   },
-  "1236:1165": {
+  "1304:744": {
     "inputs": {
       "noise": [
-        "1236:1167",
+        "1304:746",
         0
       ],
       "guider": [
-        "1236:1164",
+        "1304:743",
         0
       ],
       "sampler": [
-        "1236:1162",
+        "1304:741",
         0
       ],
       "sigmas": [
-        "1236:1163",
+        "1304:742",
         0
       ],
       "latent_image": [
-        "1236:1172",
+        "1304:751",
         0
       ]
     },
@@ -172,14 +208,14 @@
       "title": "SamplerCustomAdvanced"
     }
   },
-  "1236:1166": {
+  "1304:745": {
     "inputs": {
       "samples": [
-        "1236:1165",
+        "1304:744",
         0
       ],
       "vae": [
-        "1236:1171",
+        "1304:750",
         0
       ]
     },
@@ -188,10 +224,10 @@
       "title": "VAE Decode"
     }
   },
-  "1236:1167": {
+  "1304:746": {
     "inputs": {
       "noise_seed": [
-        "1236:1175",
+        "1304:754",
         0
       ]
     },
@@ -200,7 +236,7 @@
       "title": "RandomNoise"
     }
   },
-  "1236:1168": {
+  "1304:747": {
     "inputs": {
       "unet_name": "flux-2-klein-base-9b-fp8.safetensors",
       "weight_dtype": "default"
@@ -210,7 +246,7 @@
       "title": "Load Diffusion Model"
     }
   },
-  "1236:1169": {
+  "1304:748": {
     "inputs": {
       "clip_name": "qwen_3_8b_fp4mixed.safetensors",
       "type": "flux2",
@@ -221,14 +257,14 @@
       "title": "Load CLIP"
     }
   },
-  "1236:1170": {
+  "1304:749": {
     "inputs": {
       "text": [
-        "1236:1182",
+        "1304:761",
         0
       ],
       "clip": [
-        "1236:1187",
+        "1304:766",
         1
       ]
     },
@@ -237,7 +273,7 @@
       "title": "CLIP Text Encode (Positive Prompt)"
     }
   },
-  "1236:1171": {
+  "1304:750": {
     "inputs": {
       "vae_name": "flux2-vae.safetensors"
     },
@@ -246,14 +282,14 @@
       "title": "Load VAE"
     }
   },
-  "1236:1172": {
+  "1304:751": {
     "inputs": {
       "width": [
-        "1236:1177",
+        "1304:756",
         0
       ],
       "height": [
-        "1236:1178",
+        "1304:757",
         0
       ],
       "batch_size": 1
@@ -263,13 +299,13 @@
       "title": "Empty Flux 2 Latent"
     }
   },
-  "1236:1173": {
+  "1304:752": {
     "inputs": {
       "upscale_method": "nearest-exact",
       "megapixels": 1,
       "resolution_steps": 1,
       "image": [
-        "1242",
+        "1297",
         0
       ]
     },
@@ -278,14 +314,14 @@
       "title": "ImageScaleToTotalPixels"
     }
   },
-  "1236:1174:1193": {
+  "1304:753:767": {
     "inputs": {
       "conditioning": [
-        "1236:1184",
+        "1304:763",
         0
       ],
       "latent": [
-        "1236:1174:1194",
+        "1304:753:768",
         0
       ]
     },
@@ -294,14 +330,14 @@
       "title": "ReferenceLatent"
     }
   },
-  "1236:1174:1194": {
+  "1304:753:768": {
     "inputs": {
       "pixels": [
-        "1236:1173",
+        "1304:752",
         0
       ],
       "vae": [
-        "1236:1171",
+        "1304:750",
         0
       ]
     },
@@ -310,14 +346,14 @@
       "title": "VAE Encode"
     }
   },
-  "1236:1174:1195": {
+  "1304:753:769": {
     "inputs": {
       "conditioning": [
-        "1236:1170",
+        "1304:749",
         0
       ],
       "latent": [
-        "1236:1174:1194",
+        "1304:753:768",
         0
       ]
     },
@@ -326,16 +362,16 @@
       "title": "ReferenceLatent"
     }
   },
-  "1236:1175": {
+  "1304:754": {
     "inputs": {
-      "value": -677241099807063
+      "value": -857069186578416
     },
     "class_type": "PrimitiveInt",
     "_meta": {
       "title": "seed"
     }
   },
-  "1236:1176": {
+  "1304:755": {
     "inputs": {
       "value": 20
     },
@@ -344,7 +380,7 @@
       "title": "steps"
     }
   },
-  "1236:1177": {
+  "1304:756": {
     "inputs": {
       "value": 1024
     },
@@ -353,7 +389,7 @@
       "title": "width"
     }
   },
-  "1236:1178": {
+  "1304:757": {
     "inputs": {
       "value": 1024
     },
@@ -362,22 +398,22 @@
       "title": "height"
     }
   },
-  "1236:1179": {
+  "1304:758": {
     "inputs": {
       "seed": [
-        "1236:1175",
+        "1304:754",
         0
       ],
       "steps": [
-        "1236:1176",
+        "1304:755",
         0
       ],
       "model": [
-        "1236:1181",
+        "1304:760",
         0
       ],
       "author": [
-        "1236:1180",
+        "1304:759",
         0
       ],
       "output_path": "[time(%Y-%m-%d)]",
@@ -389,12 +425,12 @@
       "save_svg": true,
       "save_yaml": false,
       "prompt": [
-        "1236:1182",
+        "1304:761",
         0
       ],
       "negative_prompt": "",
       "additional_text": [
-        "1236:1192",
+        "1304:854",
         0
       ]
     },
@@ -403,7 +439,7 @@
       "title": "Save Params as SVG"
     }
   },
-  "1236:1180": {
+  "1304:759": {
     "inputs": {
       "value": "Lakzhmy"
     },
@@ -412,7 +448,7 @@
       "title": "author"
     }
   },
-  "1236:1181": {
+  "1304:760": {
     "inputs": {
       "value": "FLUX.2 Image-to-Image"
     },
@@ -421,10 +457,10 @@
       "title": "model"
     }
   },
-  "1236:1182": {
+  "1304:761": {
     "inputs": {
       "prompt": [
-        "1214",
+        "1305",
         0
       ]
     },
@@ -433,10 +469,10 @@
       "title": "⚙️ CR Prompt Text"
     }
   },
-  "1236:1183": {
+  "1304:762": {
     "inputs": {
       "image": [
-        "1236:1173",
+        "1304:752",
         0
       ]
     },
@@ -445,14 +481,14 @@
       "title": "Get Image Size"
     }
   },
-  "1236:1184": {
+  "1304:763": {
     "inputs": {
       "text": [
-        "1236:1186",
+        "1304:765",
         0
       ],
       "clip": [
-        "1236:1187",
+        "1304:766",
         1
       ]
     },
@@ -461,7 +497,7 @@
       "title": "CLIP Text Encode (Negative Prompt)"
     }
   },
-  "1236:1185": {
+  "1304:764": {
     "inputs": {
       "value": 2.5
     },
@@ -470,7 +506,7 @@
       "title": "cfg"
     }
   },
-  "1236:1186": {
+  "1304:765": {
     "inputs": {
       "prompt": "prompt"
     },
@@ -479,17 +515,17 @@
       "title": "⚙️ CR Prompt Text"
     }
   },
-  "1236:1187": {
+  "1304:766": {
     "inputs": {
       "lora_name": "tintin_style_klein9b.safetensors",
       "strength_model": 0.8,
       "strength_clip": 1,
       "model": [
-        "1236:1168",
+        "1304:747",
         0
       ],
       "clip": [
-        "1236:1169",
+        "1304:748",
         0
       ]
     },
@@ -498,7 +534,7 @@
       "title": "Load LoRA (Model and CLIP)"
     }
   },
-  "1236:1188": {
+  "1304:847": {
     "inputs": {
       "prefix": "",
       "suffix": "",
@@ -509,7 +545,7 @@
       "title": "Something To String"
     }
   },
-  "1236:1189": {
+  "1304:848": {
     "inputs": {
       "prefix": "",
       "suffix": "",
@@ -520,14 +556,14 @@
       "title": "Something To String"
     }
   },
-  "1236:1190": {
+  "1304:849": {
     "inputs": {
       "string_a": [
-        "1236:1188",
+        "1304:847",
         0
       ],
       "string_b": [
-        "1236:1191",
+        "1304:853",
         0
       ],
       "delimiter": "_modelstrength-"
@@ -537,7 +573,7 @@
       "title": "Concatenate"
     }
   },
-  "1236:1191": {
+  "1304:853": {
     "inputs": {
       "prefix": "",
       "suffix": "",
@@ -548,14 +584,14 @@
       "title": "Something To String"
     }
   },
-  "1236:1192": {
+  "1304:854": {
     "inputs": {
       "string_a": [
-        "1236:1190",
+        "1304:849",
         0
       ],
       "string_b": [
-        "1236:1189",
+        "1304:848",
         0
       ],
       "delimiter": "_clipstrength-"
@@ -565,14 +601,201 @@
       "title": "Concatenate"
     }
   },
-  "1236:1240:1237": {
+  "1353:1314": {
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "1353:1315": {
+    "inputs": {
+      "steps": [
+        "1353:1328",
+        0
+      ],
+      "width": [
+        "1353:1329",
+        0
+      ],
+      "height": [
+        "1353:1330",
+        0
+      ]
+    },
+    "class_type": "Flux2Scheduler",
+    "_meta": {
+      "title": "Flux2Scheduler"
+    }
+  },
+  "1353:1316": {
+    "inputs": {
+      "cfg": [
+        "1353:1337",
+        0
+      ],
+      "model": [
+        "1353:1339",
+        0
+      ],
+      "positive": [
+        "1353:1345:1352",
+        0
+      ],
+      "negative": [
+        "1353:1345:1350",
+        0
+      ]
+    },
+    "class_type": "CFGGuider",
+    "_meta": {
+      "title": "CFGGuider"
+    }
+  },
+  "1353:1317": {
+    "inputs": {
+      "noise": [
+        "1353:1319",
+        0
+      ],
+      "guider": [
+        "1353:1316",
+        0
+      ],
+      "sampler": [
+        "1353:1314",
+        0
+      ],
+      "sigmas": [
+        "1353:1315",
+        0
+      ],
+      "latent_image": [
+        "1353:1324",
+        0
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "SamplerCustomAdvanced"
+    }
+  },
+  "1353:1318": {
+    "inputs": {
+      "samples": [
+        "1353:1317",
+        0
+      ],
+      "vae": [
+        "1353:1323",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "1353:1319": {
+    "inputs": {
+      "noise_seed": [
+        "1353:1327",
+        0
+      ]
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "RandomNoise"
+    }
+  },
+  "1353:1320": {
+    "inputs": {
+      "unet_name": "flux-2-klein-4b.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "1353:1321": {
+    "inputs": {
+      "clip_name": "qwen_3_4b_fp8_mixed.safetensors",
+      "type": "flux2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "1353:1322": {
+    "inputs": {
+      "text": [
+        "1353:1334",
+        0
+      ],
+      "clip": [
+        "1353:1339",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "1353:1323": {
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "1353:1324": {
+    "inputs": {
+      "width": [
+        "1353:1329",
+        0
+      ],
+      "height": [
+        "1353:1330",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyFlux2LatentImage",
+    "_meta": {
+      "title": "Empty Flux 2 Latent"
+    }
+  },
+  "1353:1325": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "1296",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "ImageScaleToTotalPixels"
+    }
+  },
+  "1353:1326:1347": {
     "inputs": {
       "conditioning": [
-        "1236:1174:1193",
+        "1353:1336",
         0
       ],
       "latent": [
-        "1236:1240:1238",
+        "1353:1326:1348",
         0
       ]
     },
@@ -581,14 +804,14 @@
       "title": "ReferenceLatent"
     }
   },
-  "1236:1240:1238": {
+  "1353:1326:1348": {
     "inputs": {
       "pixels": [
-        "1236:1241",
+        "1353:1325",
         0
       ],
       "vae": [
-        "1236:1171",
+        "1353:1323",
         0
       ]
     },
@@ -597,14 +820,14 @@
       "title": "VAE Encode"
     }
   },
-  "1236:1240:1239": {
+  "1353:1326:1349": {
     "inputs": {
       "conditioning": [
-        "1236:1174:1195",
+        "1353:1322",
         0
       ],
       "latent": [
-        "1236:1240:1238",
+        "1353:1326:1348",
         0
       ]
     },
@@ -613,13 +836,303 @@
       "title": "ReferenceLatent"
     }
   },
-  "1236:1241": {
+  "1353:1327": {
+    "inputs": {
+      "value": 175289288245510
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "seed"
+    }
+  },
+  "1353:1328": {
+    "inputs": {
+      "value": 20
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "steps"
+    }
+  },
+  "1353:1329": {
+    "inputs": {
+      "value": 1024
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "width"
+    }
+  },
+  "1353:1330": {
+    "inputs": {
+      "value": 1024
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "height"
+    }
+  },
+  "1353:1331": {
+    "inputs": {
+      "seed": [
+        "1353:1327",
+        0
+      ],
+      "steps": [
+        "1353:1328",
+        0
+      ],
+      "model": [
+        "1353:1333",
+        0
+      ],
+      "author": [
+        "1353:1332",
+        0
+      ],
+      "output_path": "[time(%Y-%m-%d)]",
+      "file_prefix": "[time(%Y%m%d_%H%M%S)]_param",
+      "wrap_width": 60,
+      "font_family": "Arial",
+      "font_size": 36,
+      "dark_mode": false,
+      "save_svg": true,
+      "save_yaml": false,
+      "prompt": [
+        "1353:1334",
+        0
+      ],
+      "negative_prompt": "",
+      "additional_text": [
+        "1353:1344",
+        0
+      ]
+    },
+    "class_type": "SaveParamsSVG",
+    "_meta": {
+      "title": "Save Params as SVG"
+    }
+  },
+  "1353:1332": {
+    "inputs": {
+      "value": "Lakzhmy"
+    },
+    "class_type": "PrimitiveString",
+    "_meta": {
+      "title": "author"
+    }
+  },
+  "1353:1333": {
+    "inputs": {
+      "value": "FLUX.2 Image-to-Image"
+    },
+    "class_type": "PrimitiveString",
+    "_meta": {
+      "title": "model"
+    }
+  },
+  "1353:1334": {
+    "inputs": {
+      "prompt": [
+        "1355",
+        0
+      ]
+    },
+    "class_type": "CR Prompt Text",
+    "_meta": {
+      "title": "⚙️ CR Prompt Text"
+    }
+  },
+  "1353:1335": {
+    "inputs": {
+      "image": [
+        "1353:1325",
+        0
+      ]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "1353:1336": {
+    "inputs": {
+      "text": [
+        "1353:1338",
+        0
+      ],
+      "clip": [
+        "1353:1339",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "1353:1337": {
+    "inputs": {
+      "value": 2.5
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "cfg"
+    }
+  },
+  "1353:1338": {
+    "inputs": {
+      "prompt": [
+        "1301",
+        0
+      ]
+    },
+    "class_type": "CR Prompt Text",
+    "_meta": {
+      "title": "⚙️ CR Prompt Text"
+    }
+  },
+  "1353:1339": {
+    "inputs": {
+      "lora_name": "PETAGONIST.2_000002500.safetensors",
+      "strength_model": 0.8,
+      "strength_clip": 1,
+      "model": [
+        "1353:1320",
+        0
+      ],
+      "clip": [
+        "1353:1321",
+        0
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)"
+    }
+  },
+  "1353:1340": {
+    "inputs": {
+      "prefix": "",
+      "suffix": "",
+      "input": "PETAGONIST.2_000002500.safetensors"
+    },
+    "class_type": "SomethingToString",
+    "_meta": {
+      "title": "Something To String"
+    }
+  },
+  "1353:1341": {
+    "inputs": {
+      "prefix": "",
+      "suffix": "",
+      "input": 1
+    },
+    "class_type": "SomethingToString",
+    "_meta": {
+      "title": "Something To String"
+    }
+  },
+  "1353:1342": {
+    "inputs": {
+      "string_a": [
+        "1353:1340",
+        0
+      ],
+      "string_b": [
+        "1353:1343",
+        0
+      ],
+      "delimiter": "_modelstrength-"
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "Concatenate"
+    }
+  },
+  "1353:1343": {
+    "inputs": {
+      "prefix": "",
+      "suffix": "",
+      "input": 0.8
+    },
+    "class_type": "SomethingToString",
+    "_meta": {
+      "title": "Something To String"
+    }
+  },
+  "1353:1344": {
+    "inputs": {
+      "string_a": [
+        "1353:1342",
+        0
+      ],
+      "string_b": [
+        "1353:1341",
+        0
+      ],
+      "delimiter": "_clipstrength-"
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "Concatenate"
+    }
+  },
+  "1353:1345:1350": {
+    "inputs": {
+      "conditioning": [
+        "1353:1326:1347",
+        0
+      ],
+      "latent": [
+        "1353:1345:1351",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "ReferenceLatent"
+    }
+  },
+  "1353:1345:1351": {
+    "inputs": {
+      "pixels": [
+        "1353:1346",
+        0
+      ],
+      "vae": [
+        "1353:1323",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "1353:1345:1352": {
+    "inputs": {
+      "conditioning": [
+        "1353:1326:1349",
+        0
+      ],
+      "latent": [
+        "1353:1345:1351",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "ReferenceLatent"
+    }
+  },
+  "1353:1346": {
     "inputs": {
       "upscale_method": "nearest-exact",
       "megapixels": 1,
       "resolution_steps": 1,
       "image": [
-        "1217",
+        "1304:745",
         0
       ]
     },

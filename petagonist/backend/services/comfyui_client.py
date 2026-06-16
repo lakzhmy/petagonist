@@ -55,17 +55,18 @@ _VARIANT_STRIP_NODES = {
     "1101:847", "1101:848", "1101:849", "1101:853", "1101:854",
 }
 
-# -- Seam 2+3 constants ------------------------------------------------------
+# -- Seam 2+3 constants (two-pass: tintinify scene, then composite pet) ------
 
-PANEL_PROMPT_TEMPLATE = (
+SCENE_PROMPT = "comic style, tintin comic style, flat color, paper texture"
+
+COMPOSITE_PROMPT_TEMPLATE = (
     "comic style, tintin comic style, flat color, paper texture, "
-    "Image 1 is a {pet_desc} in comic style. "
-    "Place this exact {pet_desc} onto Image 2. "
-    "The {pet_desc} is {pose}. "
+    "Place pet in Image 1 onto Image 2. "
+    "Image 1 is a {pet_desc}. The {pet_desc} is {pose}. "
     "Preserve the exact breed, color, and markings of the pet from Image 1. "
     "Image 2 should be in tintin comic style. "
     "small pet, pet is smaller than people, correct animal proportions, "
-    "pet on the ground, natural scale"
+    "pet on the ground, natural scale, PETAGONIST.2"
 )
 
 PANEL_NEGATIVE = (
@@ -78,10 +79,16 @@ PANEL_NEGATIVE = (
     "deformed, mutated, disfigured, malformed"
 )
 
+# Strip SaveParamsSVG logging chains + preview from both passes
 _PANEL_STRIP_NODES = {
-    "1236:1179", "1236:1180", "1236:1181",
-    "1236:1183",
-    "1236:1188", "1236:1189", "1236:1190", "1236:1191", "1236:1192",
+    # Pass 1 (scene tintinify) logging
+    "1304:758", "1304:759", "1304:760", "1304:762",
+    "1304:847", "1304:848", "1304:849", "1304:853", "1304:854",
+    # Pass 2 (composite) logging
+    "1353:1331", "1353:1332", "1353:1333", "1353:1335",
+    "1353:1340", "1353:1341", "1353:1342", "1353:1343", "1353:1344",
+    # Preview node
+    "1306",
 }
 
 # -- Load workflow templates --------------------------------------------------
@@ -116,8 +123,13 @@ _PANEL_WF = _load_workflow(
     "composite_pet_into_scene.json",
     _PANEL_STRIP_NODES,
     {
-        "1236:1186": {"prompt": PANEL_NEGATIVE},
-        "1236:1185": {"value": 3.5},
+        # Pass 1: scene tintinify — prompt + negative + CFG
+        "1305": {"value": SCENE_PROMPT},
+        "1304:765": {"prompt": PANEL_NEGATIVE},
+        "1304:764": {"value": 3.5},
+        # Pass 2: composite — negative + CFG (positive prompt set at runtime)
+        "1301": {"value": PANEL_NEGATIVE},
+        "1353:1337": {"value": 3.5},
     },
 )
 
@@ -303,20 +315,25 @@ class ComfyUIClient:
 
         pet_desc = pet_description.strip() if pet_description else "pet"
         pose = pose_prompt.strip() if pose_prompt else "doing an action"
-        prompt = PANEL_PROMPT_TEMPLATE.format(pet_desc=pet_desc, pose=pose)
+        composite_prompt = COMPOSITE_PROMPT_TEMPLATE.format(pet_desc=pet_desc, pose=pose)
 
         try:
             wf = copy.deepcopy(_PANEL_WF)
-            wf["1213"]["inputs"]["image"] = pet_comfy
-            wf["1215"]["inputs"]["image"] = scene_comfy
-            wf["1214"]["inputs"]["value"] = prompt
-            wf["1236:1175"]["inputs"]["value"] = seed % (2**31)
-            wf["1211"]["inputs"]["filename_prefix"] = (
+            # Input images
+            wf["1294"]["inputs"]["image"] = pet_comfy
+            wf["1295"]["inputs"]["image"] = scene_comfy
+            # Pass 2 composite prompt (pass 1 scene prompt is set at load time)
+            wf["1355"]["inputs"]["value"] = composite_prompt
+            # Seeds for both passes
+            wf["1304:754"]["inputs"]["value"] = seed % (2**31)
+            wf["1353:1327"]["inputs"]["value"] = (seed + 42) % (2**31)
+            # Output path
+            wf["1354"]["inputs"]["filename_prefix"] = (
                 f"petagonist/panels/{os.path.basename(out_path).replace('.png', '')}"
             )
 
             history = self._submit_and_wait(wf, timeout=300)
-            images = history["outputs"]["1211"]["images"]
+            images = history["outputs"]["1354"]["images"]
             self._download_output(images[0], out_path)
             log.info("Panel composited: %s", os.path.basename(out_path))
             return out_path
