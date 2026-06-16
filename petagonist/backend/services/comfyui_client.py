@@ -59,10 +59,9 @@ _VARIANT_STRIP_NODES = {
 
 SCENE_PROMPT = "comic style, tintin comic style, flat color, paper texture"
 
-COMPOSITE_PROMPT_TEMPLATE = (
+COMPOSITE_PROMPT = (
     "comic style, tintin comic style, flat color, paper texture, "
     "Place pet in Image 1 onto Image 2. "
-    "Image 1 is a {pet_desc}. The {pet_desc} is {pose}. "
     "Preserve the exact breed, color, and markings of the pet from Image 1. "
     "Image 2 should be in tintin comic style. "
     "small pet, pet is smaller than people, correct animal proportions, "
@@ -126,10 +125,11 @@ _PANEL_WF = _load_workflow(
         # Pass 1: scene tintinify — prompt + negative + CFG
         "1305": {"value": SCENE_PROMPT},
         "1304:765": {"prompt": PANEL_NEGATIVE},
-        "1304:764": {"value": 3.5},
-        # Pass 2: composite — negative + CFG (positive prompt set at runtime)
+        "1304:764": {"value": 2.5},
+        # Pass 2: composite — negative + CFG + prompt
         "1301": {"value": PANEL_NEGATIVE},
-        "1353:1337": {"value": 3.5},
+        "1353:1337": {"value": 2.5},
+        "1355": {"value": COMPOSITE_PROMPT},
     },
 )
 
@@ -313,17 +313,11 @@ class ComfyUIClient:
             log.exception("Failed to upload images for panel compositing")
             return scene_path
 
-        pet_desc = pet_description.strip() if pet_description else "pet"
-        pose = pose_prompt.strip() if pose_prompt else "doing an action"
-        composite_prompt = COMPOSITE_PROMPT_TEMPLATE.format(pet_desc=pet_desc, pose=pose)
-
         try:
             wf = copy.deepcopy(_PANEL_WF)
             # Input images
             wf["1294"]["inputs"]["image"] = pet_comfy
             wf["1295"]["inputs"]["image"] = scene_comfy
-            # Pass 2 composite prompt (pass 1 scene prompt is set at load time)
-            wf["1355"]["inputs"]["value"] = composite_prompt
             # Seeds for both passes
             wf["1304:754"]["inputs"]["value"] = seed % (2**31)
             wf["1353:1327"]["inputs"]["value"] = (seed + 42) % (2**31)
