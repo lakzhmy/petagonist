@@ -1,10 +1,14 @@
 """Comic-strip layout: combine panels into a downloadable strip PNG + PDF.
 
-`build_print_template` produces the two printable 16:9 pages the UI offers at
-download time: a **strip** (2×4 upright grid on yellow bands) and a fold-up
-**zine** (8-page booklet imposition — the top row is rotated 180°). Both always
-have 8 cells; with fewer panels the extras render as solid colour blocks with an
-optional caption.
+`build_print_template` produces the two printable pages the UI offers at
+download time: a **strip** (2×4 reading-order grid) and a fold-up **zine**
+(8-page booklet imposition — the top row is rotated 180°). Both always have
+8 cells; with fewer panels the extras render as solid colour blocks with an
+optional caption. Each cell sits inside a coloured frame with rounded inner
+edges — the frame colours double as cut/fold guides (no dashed lines).
+
+Page: 17×11 inches (tabloid) at 150 DPI = 2550×1650 px.
+Frame area: 16×8 inches centered = 2400×1200 px → 4×2 grid of 600×600 cells.
 """
 
 from __future__ import annotations
@@ -20,13 +24,30 @@ GAP = 18
 PAD = 24
 BG = "#4A2FBD"  # grape
 
-# ---- Print template constants ---------------------------------------------
-PAGE = (1920, 1080)  # 16:9
-PINK = "#FBD0DA"  # page background
-SUN = "#FFD93B"  # strip row band
-GUIDE = "#B98AA8"  # zine dashed cut/fold guides
+# ---- Print template constants -----------------------------------------------
+
+DPI = 150
+PAGE = (int(17 * DPI), int(11 * DPI))  # 2550 × 1650
+FRAME_W, FRAME_H = int(16 * DPI), int(8 * DPI)  # 2400 × 1200
+COLS, ROWS = 4, 2
+CELL = FRAME_W // COLS  # 600 × 600
+
+FRAME_BORDER = 34  # px of coloured frame around each panel
+INNER = CELL - 2 * FRAME_BORDER  # 532 px inner panel area
+CORNER = 64  # rounded corner radius on the inner cutout
+
+# Frame colours by grid position (from the Illustrator SVG).
+# Each row is L→R; [row][col].
+FRAME_COLORS = [
+    ["#f15d3c", "#50479d", "#f06ba8", "#87c65a"],  # row 0
+    ["#fdd700", "#6cc1ec", "#f15d3c", "#50479d"],  # row 1
+]
+
 # Brand colours cycled for blank cells (slots beyond the panel count).
-BLANK_COLORS = ["#FF5C35", "#4A2FBD", "#FF69B4", "#7ED957", "#5EC5FF", "#FFD700", "#9C8CF5", "#FF8FAB"]
+BLANK_COLORS = [
+    "#FF5C35", "#4A2FBD", "#FF69B4", "#7ED957",
+    "#5EC5FF", "#FFD700", "#9C8CF5", "#FF8FAB",
+]
 
 
 def build_strip(panel_paths: list[str], out_path: str, orientation: str = "horizontal") -> str:
@@ -63,69 +84,58 @@ def build_pdf(panel_paths: list[str], out_path: str) -> str:
     if not panels:
         raise ValueError("no panels to lay out")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    panels[0].save(out_path, "PDF", save_all=True, append_images=panels[1:], resolution=150)
+    panels[0].save(out_path, "PDF", save_all=True, append_images=panels[1:], resolution=DPI)
     return out_path
 
 
 # ===========================================================================
-# Printable 16:9 templates (strip / zine)
+# Printable templates (strip / zine) with coloured frames
 # ===========================================================================
 
-CORNER = 28
-
-
-def _rounded(img: Image.Image, radius: int = CORNER) -> Image.Image:
-    """Return an RGBA copy of `img` with rounded corners (transparent outside)."""
-    rgba = img.convert("RGBA")
-    mask = Image.new("L", img.size, 0)
+def _rounded_mask(size: tuple[int, int], radius: int) -> Image.Image:
+    """Create an L-mode mask with a white rounded rectangle."""
+    mask = Image.new("L", size, 0)
     ImageDraw.Draw(mask).rounded_rectangle(
-        (0, 0, img.size[0] - 1, img.size[1] - 1), radius=radius, fill=255
+        (0, 0, size[0] - 1, size[1] - 1), radius=radius, fill=255,
     )
-    rgba.putalpha(mask)
-    return rgba
+    return mask
 
 
-def _panel_cell(panel: Image.Image, size: tuple[int, int]) -> Image.Image:
-    """Letterbox a comic panel into a white, rounded cell of `size`."""
-    cell = Image.new("RGB", size, "#FFFFFF")
-    fitted = ImageOps.contain(panel.convert("RGB"), size, Image.LANCZOS)
-    cell.paste(fitted, ((size[0] - fitted.width) // 2, (size[1] - fitted.height) // 2))
-    return _rounded(cell)
+def _fit_square(panel: Image.Image, size: int) -> Image.Image:
+    """Crop-to-fill a panel into a square, then resize."""
+    return ImageOps.fit(panel.convert("RGB"), (size, size), Image.LANCZOS)
 
 
-def _blank_cell(size: tuple[int, int], color: str, caption: str) -> Image.Image:
-    """A solid-colour rounded cell with an optional centered caption."""
-    cell = Image.new("RGB", size, color)
-    if caption.strip():
-        d = ImageDraw.Draw(cell)
-        font = _load_font(40)
-        wrapped = textwrap.fill(caption.strip(), width=16)
-        d.multiline_text(
-            (size[0] // 2, size[1] // 2),
-            wrapped,
-            font=font,
-            fill="#FFFFFF",
-            anchor="mm",
-            align="center",
-            spacing=8,
-        )
-    return _rounded(cell)
+def _framed_cell(
+    panel: Image.Image | None,
+    frame_color: str,
+    blank_color: str = "",
+    caption: str = "",
+) -> Image.Image:
+    """Build one 600×600 cell: coloured frame with a rounded-corner panel inside."""
+    cell = Image.new("RGB", (CELL, CELL), frame_color)
 
+    if panel is not None:
+        inner = _fit_square(panel, INNER)
+    else:
+        inner = Image.new("RGB", (INNER, INNER), blank_color or frame_color)
+        if caption.strip():
+            d = ImageDraw.Draw(inner)
+            font = _load_font(36)
+            wrapped = textwrap.fill(caption.strip(), width=14)
+            d.multiline_text(
+                (INNER // 2, INNER // 2),
+                wrapped,
+                font=font,
+                fill="#FFFFFF",
+                anchor="mm",
+                align="center",
+                spacing=8,
+            )
 
-def _dashed_line(d: ImageDraw.ImageDraw, p0, p1, color=GUIDE, width=3, dash=20, gap=14) -> None:
-    """Draw a dashed horizontal or vertical line from p0 to p1."""
-    x0, y0 = p0
-    x1, y1 = p1
-    if y0 == y1:  # horizontal
-        x = x0
-        while x < x1:
-            d.line([(x, y0), (min(x + dash, x1), y0)], fill=color, width=width)
-            x += dash + gap
-    else:  # vertical
-        y = y0
-        while y < y1:
-            d.line([(x0, y), (x0, min(y + dash, y1))], fill=color, width=width)
-            y += dash + gap
+    mask = _rounded_mask((INNER, INNER), CORNER)
+    cell.paste(inner, (FRAME_BORDER, FRAME_BORDER), mask)
+    return cell
 
 
 def build_print_template(
@@ -135,66 +145,47 @@ def build_print_template(
     out_path: str,
     fmt: str = "pdf",
 ) -> str:
-    """Render a printable 16:9 page (strip or zine) and save as PDF or PNG.
+    """Render a printable tabloid page (strip or zine) and save as PDF or PNG.
 
-    Always lays out 8 cells. Slot i (0-based) shows panel i if it exists, else a
-    blank colour block carrying captions.get(str(i)). For the zine the top row is
-    rotated 180° and the page order is the classic 8-page booklet imposition.
+    Always lays out 8 cells. Slot i (0-based) shows panel i if it exists,
+    else a blank colour block carrying captions.get(str(i)). For the zine the
+    top row is rotated 180° and the page order is the classic 8-page booklet
+    imposition. Coloured frames replace dashed cut/fold guides.
     """
     W, H = PAGE
-    margin, gap = 70, 28
-    cols, rows = 4, 2
-    cw = (W - 2 * margin - (cols - 1) * gap) // cols
-    ch = (H - 2 * margin - (rows - 1) * gap) // rows
+    mx = (W - FRAME_W) // 2  # horizontal margin (75 px)
+    my = (H - FRAME_H) // 2  # vertical margin (225 px)
 
     panels = [Image.open(p) for p in panel_paths[:8]]
     n = len(panels)
 
-    def slot_cell(i: int) -> Image.Image:
-        if i < n:
-            return _panel_cell(panels[i], (cw, ch))
-        return _blank_cell((cw, ch), BLANK_COLORS[i % len(BLANK_COLORS)], captions.get(str(i), ""))
+    def slot_cell(slot: int, col: int, row: int) -> Image.Image:
+        color = FRAME_COLORS[row][col]
+        if slot < n:
+            return _framed_cell(panels[slot], color)
+        blank = BLANK_COLORS[slot % len(BLANK_COLORS)]
+        return _framed_cell(None, color, blank_color=blank, caption=captions.get(str(slot), ""))
 
-    def xy(col: int, row: int) -> tuple[int, int]:
-        return margin + col * (cw + gap), margin + row * (ch + gap)
-
-    page = Image.new("RGB", (W, H), PINK)
-    pd = ImageDraw.Draw(page)
+    page = Image.new("RGB", (W, H), "#FFFFFF")
 
     if template == "zine":
-        # 8-page fold-up imposition. Bottom row upright; top row upside down.
-        #   bottom L→R:  BACK(img8)  FRONT(img1)  img2  img3   -> slots 7,0,1,2
-        #   top L→R (180°): img7  img6  img5  img4            -> slots 6,5,4,3
-        top = [6, 5, 4, 3]
-        bottom = [7, 0, 1, 2]
-        for col, idx in enumerate(top):
-            cell = slot_cell(idx).rotate(180)
-            page.paste(cell, xy(col, 0), cell)
-        for col, idx in enumerate(bottom):
-            cell = slot_cell(idx)
-            page.paste(cell, xy(col, 1), cell)
-        # Dashed cut/fold guides: 3 vertical, 1 horizontal, + outer border.
-        for col in range(1, cols):
-            gx = margin + col * (cw + gap) - gap // 2
-            _dashed_line(pd, (gx, margin), (gx, H - margin))
-        gy = margin + ch + gap // 2
-        _dashed_line(pd, (margin, gy), (W - margin, gy))
-        _dashed_line(pd, (margin, margin), (W - margin, margin))
-        _dashed_line(pd, (margin, H - margin), (W - margin, H - margin))
-        _dashed_line(pd, (margin, margin), (margin, H - margin))
-        _dashed_line(pd, (W - margin, margin), (W - margin, H - margin))
-    else:  # strip — upright 2×4 reading order on yellow row bands
-        for row in range(rows):
-            x0, y0 = margin - 18, margin + row * (ch + gap) - 18
-            pd.rounded_rectangle((x0, y0, W - margin + 18, y0 + ch + 36), radius=40, fill=SUN)
+        top_slots = [6, 5, 4, 3]
+        bottom_slots = [7, 0, 1, 2]
+        for col, slot in enumerate(top_slots):
+            cell = slot_cell(slot, col, 0).rotate(180)
+            page.paste(cell, (mx + col * CELL, my))
+        for col, slot in enumerate(bottom_slots):
+            cell = slot_cell(slot, col, 1)
+            page.paste(cell, (mx + col * CELL, my + CELL))
+    else:
         for k in range(8):
-            col, row = k % cols, k // cols
-            cell = slot_cell(k)
-            page.paste(cell, xy(col, row), cell)
+            col, row = k % COLS, k // COLS
+            cell = slot_cell(k, col, row)
+            page.paste(cell, (mx + col * CELL, my + row * CELL))
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     if fmt == "png":
         page.save(out_path, "PNG")
     else:
-        page.save(out_path, "PDF", resolution=150)
+        page.save(out_path, "PDF", resolution=DPI)
     return out_path
