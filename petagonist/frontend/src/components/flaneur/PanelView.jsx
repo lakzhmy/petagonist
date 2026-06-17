@@ -16,8 +16,14 @@ export default function PanelView({ panel, index = 0, onRegenerate, rolling = fa
           className="block w-full"
           onError={(e) => {
             const src = e.target.src
-            if (!src.includes('&retry=')) {
-              e.target.src = src + (src.includes('?') ? '&' : '?') + 'retry=1'
+            if (!src.includes('retry=')) {
+              setTimeout(() => {
+                e.target.src = src + (src.includes('?') ? '&' : '?') + 'retry=1'
+              }, 500)
+            } else if (!src.includes('retry=2')) {
+              setTimeout(() => {
+                e.target.src = src.replace('retry=1', 'retry=2')
+              }, 1500)
             }
           }}
         />

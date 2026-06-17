@@ -106,8 +106,10 @@ export default function FlaneurPage() {
     if (!pet) return
     try {
       const res = await regenerateVariant(pet.id, variantId)
+      const updated = res.variant
+      updated.image_url += `?t=${Date.now()}`
       setVariants((prev) =>
-        prev.map((v) => (v.id === variantId ? res.variant : v))
+        prev.map((v) => (v.id === variantId ? updated : v))
       )
       setSelectedIds((prev) => prev.filter((id) => id !== variantId))
     } catch (e) {

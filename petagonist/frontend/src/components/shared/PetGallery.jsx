@@ -145,10 +145,18 @@ function VariantCard({ variant: v, isOn, disabled, onToggle, onRegenerate }) {
         </span>
 
         <img
+          key={v.image_url}
           src={v.image_url}
           alt={v.pose_prompt}
-          loading="lazy"
           className="aspect-square w-full object-cover"
+          onError={(e) => {
+            const src = e.target.src
+            if (!src.includes('retry=')) {
+              setTimeout(() => {
+                e.target.src = src + (src.includes('?') ? '&' : '?') + 'retry=1'
+              }, 500)
+            }
+          }}
         />
       </button>
 

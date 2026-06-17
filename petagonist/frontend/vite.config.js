@@ -12,7 +12,11 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:8002',
+        timeout: 600000,
         configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            res.setTimeout(600000)
+          })
           proxy.on('proxyRes', (proxyRes) => {
             if (proxyRes.headers['content-type']?.includes('text/event-stream')) {
               proxyRes.headers['cache-control'] = 'no-cache'
