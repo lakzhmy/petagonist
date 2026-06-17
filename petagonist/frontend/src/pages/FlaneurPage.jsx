@@ -206,7 +206,7 @@ export default function FlaneurPage() {
       <section className="mx-auto max-w-5xl px-5 py-12">
         <div className="text-center">
           <h1 className="mx-auto max-w-2xl font-display text-4xl font-black leading-tight text-white sm:text-5xl">
-            Let&apos;s make an awesome pet adventure for your baby!
+            Let&apos;s make an awesome pet adventure for your fur baby!
           </h1>
         </div>
 
