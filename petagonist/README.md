@@ -19,6 +19,18 @@ real city — the result is an illustrated comic strip. A MACAD thesis project.
 Two processes. The Vite dev server proxies `/api` and `/static` to the backend,
 so you only ever open **http://localhost:5173**.
 
+# Terminal 1: Backend
+cd petagonist\backend
+.venv\Scripts\python.exe -m uvicorn main:app --reload --port 8000
+
+# Terminal 2: Frontend
+cd petagonist\frontend
+npm run dev
+
+# Terminal 3: ComfyUI (if not already running separately)
+# however you normally start it
+
+
 ### Backend (port 8000)
 
 ```bash
